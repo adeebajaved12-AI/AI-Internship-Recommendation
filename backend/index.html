@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ezitech AI Portal</title>
+    <style>
+        body { margin: 0; display: flex; height: 100vh; background: #0f172a; color: white; font-family: 'Segoe UI', sans-serif; }
+        aside { width: 280px; background: #020617; border-right: 2px solid #00d4ff; padding: 25px; }
+        .nav-btn { display: block; width: 100%; background: transparent; color: white; border: 1px solid #00d4ff; padding: 12px; margin: 10px 0; cursor: pointer; transition: 0.3s; }
+        .nav-btn:hover { background: #00d4ff; color: #020617; }
+        main { flex: 1; padding: 40px; overflow-y: auto; }
+        .card { background: #1e293b; padding: 20px; border-radius: 10px; border-left: 5px solid #00d4ff; margin-bottom: 20px; }
+        input { padding: 10px; width: 250px; display: block; margin-bottom: 10px; border-radius: 5px; border: none; color: black; }
+        .roadmap { color: #00d4ff; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <aside>
+        <div style="color: #00d4ff; font-size: 1.5rem; font-weight: bold; margin-bottom: 20px;">EZITECH AI</div>
+        <button class="nav-btn" onclick="showLogin()">Login</button>
+        <button class="nav-btn" onclick="showMatches()">Internship Matches</button>
+        <button class="nav-btn" onclick="showUpload()">Upload Resume</button>
+    </aside>
+    <main id="content">
+        <h1>Welcome to Ezitech AI</h1>
+        <p>Please login to see your personalized internship recommendations.</p>
+    </main>
+
+    <script>
+        let currentUserId = localStorage.getItem('userId');
+
+        function showLogin() {
+            document.getElementById('content').innerHTML = `
+                <h1>Login</h1>
+                <input type="number" id="uid" placeholder="Enter User ID" value="${currentUserId || ''}">
+                <button class="nav-btn" style="width: 200px;" onclick="login()">Login</button>
+            `;
+        }
+
+        function login() {
+            let inputId = document.getElementById('uid').value;
+            if(inputId) {
+                currentUserId = inputId;
+                localStorage.setItem('userId', currentUserId);
+                showMatches();
+            } else {
+                alert("Please enter a valid User ID");
+            }
+        }
+
+        function showUpload() {
+            if (!currentUserId) { 
+                alert("Please login first!"); 
+                showLogin(); 
+                return; 
+            }
+            document.getElementById('content').innerHTML = `
+                <h1>Upload Resume</h1>
+                <p>Upload your PDF to let our AI analyze your skills (User ID: ${currentUserId}).</p>
+                <input type="file" id="resumeFile" accept="application/pdf" style="background: white;">
+                <button class="nav-btn" style="width: 200px;" onclick="uploadResume()">Upload & Parse</button>
+            `;
+        }
+
+        async function uploadResume() {
+            const fileInput = document.getElementById('resumeFile');
+            const file = fileInput.files[0];
+            const content = document.getElementById('content');
+            if (!file) { alert("Please select a PDF file!"); return; }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            content.innerHTML = "<h1>Parsing Resume & Analyzing Skills...</h1>";
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/resume/upload-resume?student_id=${currentUserId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) throw new Error("Server returned an error");
+                const result = await response.json();
+                
+                content.innerHTML = `
+                    <h1>Resume Parsed Successfully!</h1>
+                    <div class="card">
+                        <h3>Extracted Skills & Analysis</h3>
+                        <p><strong>Detected Skills:</strong> ${result.extracted_skills || result.message || "Processed successfully"}</p>
+                        <p class="roadmap">Status: Profile updated in PostgreSQL successfully. Click below to view your personalized matches.</p>
+                    </div>
+                    <button class="nav-btn" style="width: 250px;" onclick="showMatches()">View Internship Matches</button>
+                `;
+            } catch (error) {
+                content.innerHTML = "<h2 style='color:red;'>Upload Failed! Check backend logs or ensure backend is running.</h2>";
+                console.error(error);
+            }
+        }
+
+        async function showMatches() {
+            if (!currentUserId) { 
+                alert("Please login first!");
+                showLogin(); 
+                return; 
+            }
+            const content = document.getElementById('content');
+            content.innerHTML = "<h1>Loading Matches from Database...</h1>";
+            
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/recommend/${currentUserId}`);
+                if (!res.ok) throw new Error("Failed to fetch recommendations");
+                const data = await res.json();
+                
+                let recommendations = data.recommended_internships || data.recommendations || data;
+                
+                if (recommendations && recommendations.length > 0) {
+                    let html = "<h1>Recommended Internships</h1>";
+                    recommendations.forEach(job => {
+                        html += `
+                            <div class="card">
+                                <h3>${job.title || job.internship_title} at ${job.company || "Ezitech Partner"}</h3>
+                                <p><strong>Match Score:</strong> ${job.match_score || "N/A"}%</p>
+                                <p><strong>Mentor:</strong> ${job.mentor || "Not Assigned"}</p>
+                                <p><strong>Strengths:</strong> ${job.strengths ? job.strengths.join(", ") : "N/A"}</p>
+                                <p><strong>Missing Skills:</strong> ${job.missing_skills ? job.missing_skills.join(", ") : "N/A"}</p>
+                                <p class="roadmap"><strong>Roadmap:</strong> ${job.recommended_roadmap || job.roadmap || "Standard Track"}</p>
+                                <p style="color: #94a3b8; font-style: italic; margin-top: 10px;"><strong>AI Reasoning:</strong> ${job.ai_reasoning || "No reasoning provided."}</p>
+                            </div>
+                        `;
+                    });
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = "<h1>No matches found for this User ID. Try uploading a resume first.</h1>";
+                }
+            } catch (err) {
+                content.innerHTML = "<h2 style='color:red;'>Connection Error! Make sure FastAPI backend is running.</h2>";
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>
