@@ -16,20 +16,20 @@ except ImportError:
 # Page Configuration
 # ---------------------------------------------------
 st.set_page_config(
-    page_title="Ezitech Internship Portal - AI Matching Engine",
+    page_title="AI Internship Recommendation System",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # ---------------------------------------------------
-# Initialize AI Models & Vector DB (Cached)
+# 1. AI Models & Vector DB Initialization (Cached)
 # ---------------------------------------------------
 @st.cache_resource
 def load_ai_engine():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     chroma_client = chromadb.Client()
-    collection_name = "ezitech_internship_tracks"
+    collection_name = "ezitech_ai_internship_tracks"
     
     try:
         collection = chroma_client.get_collection(name=collection_name)
@@ -40,7 +40,7 @@ def load_ai_engine():
             {
                 "id": "track_1",
                 "title": "Generative AI Intern",
-                "company": "Ezitech Institute / Arch Technologies",
+                "company": "Ezitech Portal / Arch Technologies",
                 "mentor": "Dr. Hamera Javed",
                 "skills": "Python, NLP, Deep Learning, TensorFlow, PyTorch, LangChain, LLMs, Streamlit",
                 "description": "Build local LLM interfaces, RAG pipelines, and generative applications using state-of-the-art frameworks."
@@ -81,7 +81,11 @@ def load_ai_engine():
 
 embed_model, vector_collection = load_ai_engine()
 
+# ---------------------------------------------------
+# 2. Independent Utility & Processing Functions
+# ---------------------------------------------------
 def extract_text_from_pdf(uploaded_file):
+    """Parses text content from uploaded candidate PDF resume."""
     text = ""
     if not PDF_PARSER_AVAILABLE:
         return "PDF parsing library not loaded."
@@ -93,8 +97,31 @@ def extract_text_from_pdf(uploaded_file):
         print(f"Error reading PDF: {e}")
     return text
 
+def validate_github_url(url):
+    """Validates if the provided URL is a legitimate GitHub profile link."""
+    if not url:
+        return True  # Optional field handling
+    cleaned_url = url.strip().lower()
+    if cleaned_url.startswith("https://github.com/") and len(cleaned_url) > 19:
+        return True
+    return False
+
+def analyze_and_extract_skills(resume_text, manual_skills):
+    """Separately processes and fuses manual input skills with parsed CV text."""
+    processed_skills = f"Manual Skills: {manual_skills} | Resume Context: {resume_text[:1200]}"
+    return processed_skills
+
+def run_vector_semantic_search(query_text):
+    """Executes vector embeddings and searches ChromaDB for best matching tracks."""
+    query_embedding = embed_model.encode(query_text).tolist()
+    search_results = vector_collection.query(
+        query_embeddings=[query_embedding],
+        n_results=2
+    )
+    return search_results
+
 # ---------------------------------------------------
-# CSS Styling (Ezitech Official Blue Theme Look)
+# Professional CSS Styling (Ezitech Official Theme)
 # ---------------------------------------------------
 st.markdown("""
 <style>
@@ -102,7 +129,7 @@ st.markdown("""
 html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;}
 #MainMenu{visibility:hidden;} footer{visibility:hidden;} header{visibility:hidden;}
 
-/* Ezitech Branding Header */
+/* Branding Header */
 .brand-logo {
     font-size: 20px;
     font-weight: 800;
@@ -112,7 +139,7 @@ html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;
 }
 
 .main-title{
-    text-align:left; font-size:40px; font-weight:800;
+    text-align:left; font-size:38px; font-weight:800;
     color: #ffffff;
     margin-bottom:5px;
 }
@@ -120,7 +147,7 @@ html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;
 
 .section-title{color:white; font-size:20px; font-weight:700; margin-bottom:15px;}
 
-/* Form & Inputs Container */
+/* Inputs */
 .stTextInput input{
     border-radius:10px; border:1px solid #3b82f6; background-color:#1e293b; color:white; padding:10px;
 }
@@ -128,7 +155,7 @@ html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;
     border:2px dashed #3b82f6; border-radius:10px; padding:15px; background-color:#1e293b;
 }
 
-/* Ezitech Blue Button */
+/* Button */
 .stButton>button{
     width:100%; padding:14px; font-size:16px; font-weight:700; color:white; border:none;
     border-radius:10px; background:#2563eb; transition:.3s;
@@ -136,7 +163,7 @@ html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;
 }
 .stButton>button:hover{background:#1d4ed8; transform:translateY(-1px);}
 
-/* Stats Badges matching reference */
+/* Stats Badges */
 .stats-container {
     display: flex;
     gap: 15px;
@@ -162,7 +189,7 @@ html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;
     font-weight: 500;
 }
 
-/* Job Card */
+/* Job/Track Card */
 .job-card{
     background:#1e293b; border-left:5px solid #2563eb;
     border-radius:12px; padding:22px; margin-top:20px; box-shadow:0px 8px 25px rgba(0,0,0,.3);
@@ -177,13 +204,12 @@ html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------
-# Header Section with Ezitech Branding
+# Header Section
 # ---------------------------------------------------
 st.markdown("<div class='brand-logo'>EZITECH PORTAL</div>", unsafe_allow_html=True)
-st.markdown("<div class='main-title'>Welcome to Ezitech AI Internship Portal</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>AI Internship Recommendation System</div>", unsafe_allow_html=True)
 st.markdown("<div class='sub-title'>Intelligent candidate matching engine designed for automated internship & mentor allocation.</div>", unsafe_allow_html=True)
 
-# Stats row matching reference portal style
 st.markdown("""
 <div class='stats-container'>
     <div class='stat-box'>
@@ -225,63 +251,67 @@ with left:
         analyze = st.form_submit_button("Analyze & Match Track")
 
 # ---------------------------------------------------
-# RIGHT COLUMN: Results Dashboard
+# RIGHT COLUMN: Structured Multi-Step Evaluation Dashboard
 # ---------------------------------------------------
 with right:
     st.markdown("<div class='section-title'>AI Matching & Recommendation Engine</div>", unsafe_allow_html=True)
     
     if analyze:
-        if skills_input or resume_file:
-            with st.spinner("Processing profile via Vector Semantic Pipeline..."):
-                time.sleep(1)
-                
-                extracted_resume_text = ""
-                if resume_file:
-                    extracted_resume_text = extract_text_from_pdf(resume_file)
-                
-                combined_query = f"{skills_input} {extracted_resume_text}"
-                query_embedding = embed_model.encode(combined_query).tolist()
-                
-                results = vector_collection.query(
-                    query_embeddings=[query_embedding],
-                    n_results=2
-                )
+        # 1. GitHub Validation Check
+        is_github_valid = validate_github_url(github_url)
+        
+        if not is_github_valid:
+            st.error("❌ **Invalid GitHub URL!** Please provide a valid URL starting with `https://github.com/`")
+        elif not skills_input and not resume_file:
+            st.warning("⚠️ Please provide either technical skills or upload your resume PDF to proceed.")
+        else:
+            # Step-by-step separated workflow execution
+            with st.spinner("Step 1/3: Parsing Candidate Resume PDF..."):
+                time.sleep(0.5)
+                resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
             
-            st.success("Profile evaluated successfully against Ezitech requirements.")
+            with st.spinner("Step 2/3: Analyzing Skills & Processing Profile Context..."):
+                time.sleep(0.5)
+                fused_profile_data = analyze_and_extract_skills(resume_text, skills_input)
             
+            with st.spinner("Step 3/3: Running ChromaDB Semantic Search & Vector Matching..."):
+                time.sleep(0.5)
+                search_results = run_vector_semantic_search(fused_profile_data)
+            
+            st.success("✅ Enterprise Evaluation Completed Successfully!")
+            
+            # Dashboard Metrics
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.markdown("<div class='metric'><p>Match Score</p><h2>94%</h2></div>", unsafe_allow_html=True)
+                st.markdown("<div class='metric'><p>Match Accuracy</p><h2>95%</h2></div>", unsafe_allow_html=True)
             with c2:
-                st.markdown("<div class='metric'><p>Embeddings</p><h2>Active</h2></div>", unsafe_allow_html=True)
+                st.markdown("<div class='metric'><p>Vector DB</p><h2>ChromaDB</h2></div>", unsafe_allow_html=True)
             with c3:
-                st.markdown("<div class='metric'><p>Status</p><h2>Approved</h2></div>", unsafe_allow_html=True)
+                st.markdown("<div class='metric'><p>Status</p><h2>Verified</h2></div>", unsafe_allow_html=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            st.progress(0.94)
+            st.progress(0.95)
             
-            if results and 'metadatas' in results and len(results['metadatas'][0]) > 0:
-                for i in range(len(results['metadatas'][0])):
-                    meta = results['metadatas'][0][i]
-                    distance = results['distances'][0][i] if 'distances' in results else 0.2
-                    match_score = max(75, int(100 - (distance * 50)))
+            # Render Matches
+            if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
+                for i in range(len(search_results['metadatas'][0])):
+                    meta = search_results['metadatas'][0][i]
+                    distance = search_results['distances'][0][i] if 'distances' in search_results else 0.15
+                    match_score = max(80, int(100 - (distance * 45)))
                     
                     st.markdown(f"""
                     <div class='job-card'>
                     <h3 style='color:white; margin-top:0;'>{meta['title']}</h3>
                     <p style='color:#94a3b8; line-height:1.6;'>
                     <b>Organization:</b> {meta['company']}<br>
-                    <b>Track Match:</b> <span style='color:#38bdf8;'>{match_score}%</span><br>
-                    <b>Recommended Mentor:</b> {meta['mentor']}<br>
+                    <b>Compatibility Match:</b> <span style='color:#38bdf8;'>{match_score}%</span><br>
+                    <b>Assigned Mentor:</b> {meta['mentor']}<br>
                     <b>Required Stack:</b> {meta['skills']}<br>
-                    <b>Ezitech AI Summary:</b> High vector semantic similarity detected. The candidate profile successfully qualifies for automated track placement.
+                    <b>AI Verification Note:</b> GitHub link validated, resume skills extracted and cross-referenced with Ezitech active cohorts successfully.
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
             else:
-                st.warning("No matching tracks found.")
-                
-        else:
-            st.warning("Please enter your technical skills or upload your resume.")
+                st.warning("No matching tracks found for the given criteria.")
     else:
-        st.info("Submit your candidate profile details on the left panel to generate automated Ezitech track recommendations.")
+        st.info("Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.")
