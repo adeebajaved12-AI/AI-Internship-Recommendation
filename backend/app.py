@@ -1,148 +1,392 @@
 import streamlit as st
+import time
 
+# ---------------------------------------------------
 # Page Configuration
+# ---------------------------------------------------
 st.set_page_config(
     page_title="AI Internship Recommendation System",
-    page_icon="💼",
-    layout="wide"
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# Ultimate Professional Bold Multi-color CSS Styling
+# ---------------------------------------------------
+# CSS
+# ---------------------------------------------------
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+<style>
 
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta+Sans', sans-serif;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
-    .main-title {
-        font-size: 3rem;
-        background: linear-gradient(135deg, #FF3366 0%, #BA26FF 50%, #4E65FF 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        font-weight: 800;
-        margin-bottom: 5px;
-        letter-spacing: -1px;
-    }
-    .sub-title {
-        font-size: 1.25rem;
-        color: #CBD5E1;
-        text-align: center;
-        margin-bottom: 40px;
-        font-weight: 600;
-    }
-    .section-header {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #F8FAFC;
-        margin-bottom: 15px;
-        border-left: 4px solid #3B82F6;
-        padding-left: 10px;
-    }
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
-        color: white;
-        font-weight: 700;
-        font-size: 1.1rem;
-        border-radius: 12px;
-        padding: 14px;
-        border: none;
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
-        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.6);
-        color: #ffffff;
-    }
-    .card-primary {
-        background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
-        padding: 24px;
-        border-radius: 14px;
-        border: 2px solid #6366F1;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
-    }
-    .card-secondary {
-        background: linear-gradient(135deg, #4A044E 0%, #701A75 100%);
-        padding: 24px;
-        border-radius: 14px;
-        border: 2px solid #EC4899;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 25px rgba(236, 72, 153, 0.2);
-    }
-    .metric-box {
-        background-color: #0F172A;
-        padding: 18px;
-        border-radius: 10px;
-        text-align: center;
-        border: 2px solid #334155;
-    }
-    </style>
+html, body, [class*="css"]{
+    font-family:'Poppins',sans-serif;
+    background:#0f172a;
+}
+
+/* Hide Streamlit */
+#MainMenu{visibility:hidden;}
+footer{visibility:hidden;}
+header{visibility:hidden;}
+
+.main-title{
+    text-align:center;
+    font-size:52px;
+    font-weight:800;
+    background:linear-gradient(90deg,#00DBDE,#FC00FF);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    margin-bottom:5px;
+}
+
+.sub-title{
+    text-align:center;
+    font-size:20px;
+    color:#CBD5E1;
+    margin-bottom:40px;
+}
+
+/* Section Title */
+
+.section-title{
+    color:white;
+    font-size:28px;
+    font-weight:700;
+    margin-bottom:15px;
+}
+
+/* Input */
+
+.stTextArea textarea{
+    border-radius:15px;
+    border:2px solid #3b82f6;
+}
+
+/* Upload */
+
+[data-testid="stFileUploader"]{
+    border:2px dashed #3b82f6;
+    border-radius:15px;
+    padding:15px;
+}
+
+/* Button */
+
+.stButton>button{
+
+width:100%;
+padding:14px;
+
+font-size:18px;
+
+font-weight:700;
+
+color:white;
+
+border:none;
+
+border-radius:14px;
+
+background:linear-gradient(90deg,#2563EB,#7C3AED);
+
+transition:.3s;
+
+box-shadow:0px 10px 30px rgba(37,99,235,.4);
+
+}
+
+.stButton>button:hover{
+
+transform:translateY(-3px);
+
+box-shadow:0px 15px 40px rgba(124,58,237,.6);
+
+}
+
+/* Cards */
+
+.card{
+
+background:rgba(255,255,255,.06);
+
+backdrop-filter:blur(18px);
+
+border:1px solid rgba(255,255,255,.15);
+
+border-radius:18px;
+
+padding:25px;
+
+margin-bottom:20px;
+
+box-shadow:0px 10px 35px rgba(0,0,0,.25);
+
+}
+
+/* Internship Card */
+
+.job-card{
+
+background:linear-gradient(135deg,#1E293B,#111827);
+
+border-left:6px solid #38BDF8;
+
+border-radius:18px;
+
+padding:22px;
+
+margin-top:20px;
+
+box-shadow:0px 10px 30px rgba(0,0,0,.25);
+
+}
+
+/* Metrics */
+
+.metric{
+
+background:#111827;
+
+border-radius:18px;
+
+padding:20px;
+
+text-align:center;
+
+border:1px solid #334155;
+
+}
+
+.metric h2{
+
+color:#10B981;
+
+font-size:34px;
+
+margin:0;
+
+}
+
+.metric p{
+
+color:#CBD5E1;
+
+margin:0;
+
+font-weight:600;
+
+}
+
+/* Divider */
+
+hr{
+border:1px solid #1e293b;
+}
+
+</style>
+
 """, unsafe_allow_html=True)
 
-# Header Section
-st.markdown('<p class="main-title">💼 AI-Powered Internship Recommendation System</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Advanced Deep Learning Engine for Precision Career Matching</p>', unsafe_allow_html=True)
+# ---------------------------------------------------
+# Header
+# ---------------------------------------------------
 
-# Layout Split into Two Professional Columns
-col1, col2 = st.columns([1, 1.2], gap="large")
+st.markdown("<div class='main-title'>🚀 AI Internship Recommendation System</div>", unsafe_allow_html=True)
 
-with col1:
-    st.markdown('<p class="section-header">🧑‍💻 Candidate Profile Dashboard</p>', unsafe_allow_html=True)
-    
-    with st.container():
-        skills_input = st.text_area(
-            "🛠️ **Enter Your Technical Skills (Required):**",
-            placeholder="e.g., Python, PyTorch, Deep Learning, Streamlit, FastAPI, Machine Learning",
-            height=130
-        )
-        
-        uploaded_file = st.file_uploader("📄 **Upload Professional Resume (PDF Format):**", type=["pdf"])
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        analyze_btn = st.button("✨ Run AI Recommendation Engine")
+st.markdown("<div class='sub-title'>Enterprise AI Candidate Matching Platform</div>", unsafe_allow_html=True)
 
-with col2:
-    st.markdown('<p class="section-header">🎯 Intelligent Matching Results</p>', unsafe_allow_html=True)
-    
-    if analyze_btn:
-        if skills_input:
-            with st.spinner("🔄 Processing semantic embeddings and analyzing profile compatibility..."):
-                st.success("✅ **Profile successfully analyzed and verified!**")
-                
-                # Metrics Row
-                m1, m2 = st.columns(2)
-                with m1:
-                    st.markdown('<div class="metric-box"><span style="color:#94A3B8; font-weight:700;">MATCH ACCURACY</span><br><span style="color:#10B981; font-size:1.6rem; font-weight:800;">95.4%</span></div>', unsafe_allow_html=True)
-                with m2:
-                    st.markdown('<div class="metric-box"><span style="color:#94A3B8; font-weight:700;">OPPORTUNITIES</span><br><span style="color:#6366F1; font-size:1.6rem; font-weight:800;">02 Active</span></div>', unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # Recommended Card 1
+left,right=st.columns([1,1.2])
+
+# ---------------------------------------------------
+# LEFT
+# ---------------------------------------------------
+
+with left:
+
+    st.markdown("<div class='section-title'>👨‍💻 Candidate Profile</div>",unsafe_allow_html=True)
+
+    skills=st.text_area(
+
+        "Technical Skills",
+
+        placeholder="Python, NLP, Deep Learning, TensorFlow, FastAPI, Streamlit..."
+
+    )
+
+    resume=st.file_uploader(
+
+        "Upload Resume (PDF)",
+
+        type=["pdf"]
+
+    )
+
+    analyze=st.button("🚀 Analyze Profile")
+
+# ---------------------------------------------------
+# RIGHT
+# ---------------------------------------------------
+
+with right:
+
+    st.markdown("<div class='section-title'>🎯 AI Recommendation Dashboard</div>",unsafe_allow_html=True)
+
+    if analyze:
+
+        if skills or resume:
+
+            with st.spinner("Analyzing Resume..."):
+
+                time.sleep(2)
+
+            st.success("✅ Analysis Completed Successfully")
+
+            c1,c2,c3=st.columns(3)
+
+            with c1:
+
                 st.markdown("""
-                    <div class="card-primary">
-                        <h3 style="color: #A5B4FC; margin-top:0; font-weight:800;">🌟 Generative AI Intern</h3>
-                        <p style="color: #F8FAFC; margin-bottom:6px; font-size:1.05rem;"><b>🏢 Company:</b> Arch Technologies</p>
-                        <p style="color: #F8FAFC; margin-bottom:6px; font-size:1.05rem;"><b>📊 Match Score:</b> 95% Compatibility</p>
-                        <p style="color: #CBD5E1; font-size: 0.95rem; margin-bottom:0; font-weight:600;"><b>⚙️ Tech Stack:</b> Python • PyTorch • LLMs • Streamlit</p>
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                # Recommended Card 2
+
+                <div class='metric'>
+
+                <p>🎯 Match Score</p>
+
+                <h2>95%</h2>
+
+                </div>
+
+                """,unsafe_allow_html=True)
+
+            with c2:
+
                 st.markdown("""
-                    <div class="card-secondary">
-                        <h3 style="color: #F9A8D4; margin-top:0; font-weight:800;">💡 Machine Learning Intern</h3>
-                        <p style="color: #F8FAFC; margin-bottom:6px; font-size:1.05rem;"><b>🏢 Company:</b> Tech Solutions Inc.</p>
-                        <p style="color: #F8FAFC; margin-bottom:6px; font-size:1.05rem;"><b>📊 Match Score:</b> 88% Compatibility</p>
-                        <p style="color: #CBD5E1; font-size: 0.95rem; margin-bottom:0; font-weight:600;"><b>⚙️ Tech Stack:</b> Python • Scikit-Learn • Pandas • SQL</p>
-                    </div>
-                """, unsafe_allow_html=True)
+
+                <div class='metric'>
+
+                <p>💼 Opportunities</p>
+
+                <h2>05</h2>
+
+                </div>
+
+                """,unsafe_allow_html=True)
+
+            with c3:
+
+                st.markdown("""
+
+                <div class='metric'>
+
+                <p>👨‍🏫 Mentor Match</p>
+
+                <h2>High</h2>
+
+                </div>
+
+                """,unsafe_allow_html=True)
+
+            st.markdown("<br>",unsafe_allow_html=True)
+
+            st.progress(95)
+
+            st.markdown("""
+
+<div class='job-card'>
+
+<h2 style='color:white;'>🤖 Generative AI Intern</h2>
+
+<p style='color:#CBD5E1;'>
+
+<b>🏢 Company:</b> Arch Technologies
+
+<br><br>
+
+<b>🎯 Match Score:</b> <span style='color:#10B981;'>95%</span>
+
+<br><br>
+
+<b>👨‍🏫 Mentor:</b> Dr. Hamera Javed
+
+<br><br>
+
+<b>⭐ Strengths:</b>
+
+Python • NLP • Machine Learning
+
+<br><br>
+
+<b>⚠ Missing Skills:</b>
+
+FastAPI
+
+<br><br>
+
+<b>📚 Learning Roadmap:</b>
+
+Python → FastAPI → Docker → LLM → Deployment
+
+<br><br>
+
+<b>💡 AI Reasoning:</b>
+
+Your profile strongly matches the internship requirements due to your experience in Python, NLP and Machine Learning.
+
+</p>
+
+</div>
+
+""",unsafe_allow_html=True)
+
+            st.markdown("""
+
+<div class='job-card'>
+
+<h2 style='color:white;'>📊 Machine Learning Intern</h2>
+
+<p style='color:#CBD5E1;'>
+
+<b>🏢 Company:</b> Tech Solutions
+
+<br><br>
+
+<b>🎯 Match Score:</b>
+
+88%
+
+<br><br>
+
+<b>👨‍🏫 Mentor:</b>
+
+Ali Ahmed
+
+<br><br>
+
+<b>⭐ Strengths:</b>
+
+Python • Scikit-Learn • SQL
+
+<br><br>
+
+<b>⚠ Missing Skills:</b>
+
+TensorFlow
+
+<br><br>
+
+<b>📚 Roadmap:</b>
+
+Machine Learning → TensorFlow → MLOps
+
+</p>
+
+</div>
+
+""",unsafe_allow_html=True)
+
         else:
-            st.warning("⚠️ **Please input your technical skills or upload your resume to initiate the recommendation process.**")
+
+            st.warning("Please enter your skills or upload a resume.")
+
     else:
-        st.info("👈 **Please provide your skill details on the left panel and click 'Run AI Recommendation Engine' to view your custom career matches.**")
+
+        st.info("👈 Upload your resume or enter your skills and click **Analyze Profile**.")
