@@ -55,12 +55,13 @@ header{visibility:hidden;}
     margin-bottom:15px;
 }
 
-/* Input Area Styling */
-.stTextArea textarea{
+/* Input Field Styling */
+.stTextInput input{
     border-radius:12px;
     border:2px solid #3b82f6;
     background-color: #1e293b;
     color: white;
+    padding: 10px;
 }
 
 /* File Uploader Styling */
@@ -162,12 +163,11 @@ left, right = st.columns([1, 1.2], gap="large")
 with left:
     st.markdown("<div class='section-title'>Candidate Profile</div>", unsafe_allow_html=True)
     
-    # Using a form enables pressing Enter to submit inputs smoothly
+    # Form allows pressing Enter to submit inputs instantly
     with st.form("profile_form"):
-        skills = st.text_area(
+        skills = st.text_input(
             "Technical Skills",
-            placeholder="Python, NLP, Deep Learning, TensorFlow, FastAPI, Streamlit...",
-            height=130
+            placeholder="Python, NLP, Deep Learning, TensorFlow, FastAPI, Streamlit..."
         )
         
         resume = st.file_uploader(
