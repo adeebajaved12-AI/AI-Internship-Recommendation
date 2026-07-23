@@ -1,7 +1,5 @@
-fastapi
-uvicorn
+streamlit
+torch
 chromadb
 pydantic
-python-multipart
 requests
-torch
