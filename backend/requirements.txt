@@ -1,5 +1,6 @@
 streamlit
-torch
+sentence-transformers
 chromadb
-pydantic
-requests
+numpy
+PyMuPDF
+torch
