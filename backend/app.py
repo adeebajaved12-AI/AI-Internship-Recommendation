@@ -121,47 +121,97 @@ def run_vector_semantic_search(query_text):
     return search_results
 
 # ---------------------------------------------------
-# Professional CSS Styling (Ezitech Official Theme)
+# Professional CSS Styling (Bold Fonts & High Contrast Dark Blue/Black/White Theme)
 # ---------------------------------------------------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;}
-#MainMenu{visibility:hidden;} footer{visibility:hidden;} header{visibility:hidden;}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Poppins', sans-serif;
+    background-color: #050b18;
+    color: #ffffff;
+}
+
+#MainMenu {visibility: hidden;} 
+footer {visibility: hidden;} 
+header {visibility: hidden;}
 
 /* Branding Header */
 .brand-logo {
-    font-size: 20px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 900;
     color: #38bdf8;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
 }
 
-.main-title{
-    text-align:left; font-size:38px; font-weight:800;
+.main-title {
+    text-align: left; 
+    font-size: 40px; 
+    font-weight: 900;
     color: #ffffff;
-    margin-bottom:5px;
-}
-.sub-title{text-align:left; font-size:16px; color:#94a3b8; margin-bottom:25px; font-weight:500;}
-
-.section-title{color:white; font-size:20px; font-weight:700; margin-bottom:15px;}
-
-/* Inputs */
-.stTextInput input{
-    border-radius:10px; border:1px solid #3b82f6; background-color:#1e293b; color:white; padding:10px;
-}
-[data-testid="stFileUploader"]{
-    border:2px dashed #3b82f6; border-radius:10px; padding:15px; background-color:#1e293b;
+    margin-bottom: 5px;
 }
 
-/* Button */
-.stButton>button{
-    width:100%; padding:14px; font-size:16px; font-weight:700; color:white; border:none;
-    border-radius:10px; background:#2563eb; transition:.3s;
-    box-shadow:0px 4px 20px rgba(37,99,235,.4);
+.sub-title {
+    text-align: left; 
+    font-size: 16px; 
+    color: #cbd5e1; 
+    margin-bottom: 25px; 
+    font-weight: 600;
 }
-.stButton>button:hover{background:#1d4ed8; transform:translateY(-1px);}
+
+.section-title {
+    color: #ffffff; 
+    font-size: 22px; 
+    font-weight: 800; 
+    margin-bottom: 15px;
+    border-left: 4px solid #2563eb;
+    padding-left: 10px;
+}
+
+/* Form Inputs & Labels */
+label {
+    font-weight: 700 !important;
+    color: #e2e8f0 !important;
+}
+
+.stTextInput input {
+    border-radius: 10px; 
+    border: 2px solid #2563eb; 
+    background-color: #0f172a; 
+    color: #ffffff; 
+    padding: 12px;
+    font-weight: 600;
+}
+
+[data-testid="stFileUploader"] {
+    border: 2px dashed #3b82f6; 
+    border-radius: 10px; 
+    padding: 15px; 
+    background-color: #0f172a;
+}
+
+/* Bold Action Button */
+.stButton>button {
+    width: 100%; 
+    padding: 15px; 
+    font-size: 17px; 
+    font-weight: 800; 
+    color: #ffffff; 
+    border: none;
+    border-radius: 10px; 
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+    transition: 0.3s;
+    box-shadow: 0px 6px 20px rgba(37, 99, 235, 0.5);
+    letter-spacing: 0.5px;
+}
+.stButton>button:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+    transform: translateY(-2px);
+}
 
 /* Stats Badges */
 .stats-container {
@@ -170,36 +220,73 @@ html, body, [class*="css"]{font-family:'Poppins',sans-serif; background:#0b1329;
     margin-bottom: 25px;
 }
 .stat-box {
-    background: #1e293b;
-    border: 1px solid #334155;
-    padding: 12px 20px;
-    border-radius: 10px;
+    background: #0f172a;
+    border: 2px solid #1e293b;
+    padding: 15px 22px;
+    border-radius: 12px;
     text-align: left;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 .stat-box h3 {
     color: #38bdf8;
     margin: 0;
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 900;
 }
 .stat-box p {
     color: #94a3b8;
     margin: 0;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
-/* Job/Track Card */
-.job-card{
-    background:#1e293b; border-left:5px solid #2563eb;
-    border-radius:12px; padding:22px; margin-top:20px; box-shadow:0px 8px 25px rgba(0,0,0,.3);
-    border: 1px solid rgba(255,255,255,0.05);
+/* Track / Job Card */
+.job-card {
+    background: #0f172a; 
+    border-left: 6px solid #2563eb;
+    border-radius: 12px; 
+    padding: 24px; 
+    margin-top: 20px; 
+    box-shadow: 0px 8px 30px rgba(0,0,0,0.5);
+    border-top: 1px solid #1e293b;
+    border-right: 1px solid #1e293b;
+    border-bottom: 1px solid #1e293b;
 }
-.metric{
-    background:#1e293b; border-radius:12px; padding:15px; text-align:center; border:1px solid #334155;
+
+.job-card h3 {
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 22px;
 }
-.metric h2{color:#38bdf8; font-size:24px; margin:0; font-weight:700;}
-.metric p{color:#94a3b8; margin:0; font-weight:600; font-size:12px;}
+
+.job-card p {
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* Metrics Display */
+.metric {
+    background: #0f172a; 
+    border-radius: 12px; 
+    padding: 18px; 
+    text-align: center; 
+    border: 2px solid #1e293b;
+}
+.metric h2 {
+    color: #38bdf8; 
+    font-size: 26px; 
+    margin: 0; 
+    font-weight: 900;
+}
+.metric p {
+    color: #94a3b8; 
+    margin: 0; 
+    font-weight: 800; 
+    font-size: 12px;
+    text-transform: uppercase;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -278,7 +365,7 @@ with right:
                 time.sleep(0.5)
                 search_results = run_vector_semantic_search(fused_profile_data)
             
-            st.success("✅ Enterprise Evaluation Completed Successfully!")
+            st.success("✅ **Enterprise Evaluation Completed Successfully!**")
             
             # Dashboard Metrics
             c1, c2, c3 = st.columns(3)
@@ -301,10 +388,10 @@ with right:
                     
                     st.markdown(f"""
                     <div class='job-card'>
-                    <h3 style='color:white; margin-top:0;'>{meta['title']}</h3>
-                    <p style='color:#94a3b8; line-height:1.6;'>
+                    <h3>{meta['title']}</h3>
+                    <p style='line-height:1.7;'>
                     <b>Organization:</b> {meta['company']}<br>
-                    <b>Compatibility Match:</b> <span style='color:#38bdf8;'>{match_score}%</span><br>
+                    <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
                     <b>Assigned Mentor:</b> {meta['mentor']}<br>
                     <b>Required Stack:</b> {meta['skills']}<br>
                     <b>AI Verification Note:</b> GitHub link validated, resume skills extracted and cross-referenced with Ezitech active cohorts successfully.
@@ -314,4 +401,4 @@ with right:
             else:
                 st.warning("No matching tracks found for the given criteria.")
     else:
-        st.info("Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.")
+        st.info("💡 **Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.**")
