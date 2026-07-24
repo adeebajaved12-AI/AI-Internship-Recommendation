@@ -47,6 +47,18 @@ if "recommendation_history_db" not in st.session_state:
         }
     ]
 
+# Shared storage for Feedback System (Bonus Feature)
+if "feedback_db" not in st.session_state:
+    st.session_state.feedback_db = [
+        {
+            "student_name": "adeeba",
+            "recommendation": "Generative AI & LLM Intern",
+            "rating": "⭐⭐⭐⭐⭐ (5/5)",
+            "comments": "Spot on recommendation for my LLM capstone project!",
+            "date": "2026-07-24 22:46"
+        }
+    ]
+
 # Shared storage for capstone submissions
 if "submissions" not in st.session_state:
     st.session_state.submissions = [
@@ -143,7 +155,7 @@ if "mentors_db" not in st.session_state:
 def load_ai_engine():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     chroma_client = chromadb.Client()
-    collection_name = "ezitech_ai_internship_tracks_expanded_v4"
+    collection_name = "ezitech_ai_internship_tracks_expanded_v5"
     
     try:
         collection = chroma_client.get_collection(name=collection_name)
@@ -629,7 +641,7 @@ else:
     # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, dynamic confidence scoring, Explainable AI dashboard, and recommendation history.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, dynamic confidence scoring, Explainable AI dashboard, recommendation history, and bonus feedback system.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -677,7 +689,7 @@ else:
                     """, unsafe_allow_html=True)
 
         with tab_rec:
-            st.markdown("<div class='section-title'>Explainable AI Dashboard, Technology Classifier & Recommendation History</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>Explainable AI Dashboard, Technology Classifier & Feedback System</div>", unsafe_allow_html=True)
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
@@ -726,14 +738,18 @@ else:
                             search_results, query_embedding = run_vector_semantic_search(fused_profile_data)
                             
                             # Automatically record recommendation history to database
+                            top_track_recorded = "Generative AI & LLM Intern"
+                            top_mentor_recorded = "Dr. Hamera Javed"
                             if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
                                 top_meta = search_results['metadatas'][0][0]
+                                top_track_recorded = top_meta['title']
+                                top_mentor_recorded = top_meta['mentor']
                                 current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
                                 st.session_state.recommendation_history_db.append({
                                     "student_name": st.session_state.user_name,
-                                    "recommendation": top_meta['title'],
+                                    "recommendation": top_track_recorded,
                                     "date": current_timestamp,
-                                    "mentor": top_meta['mentor']
+                                    "mentor": top_mentor_recorded
                                 })
                         
                         st.success("✅ **Enterprise Evaluation, Explainable AI & Recommendation Logging Completed!**")
@@ -858,8 +874,34 @@ else:
                                 </p>
                                 </div>
                                 """, unsafe_allow_html=True)
+                        
+                        # ---------------------------------------------------
+                        # 15. Feedback System (Bonus Feature)
+                        # ---------------------------------------------------
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        st.markdown("""
+                        <div class='job-card' style='border-left: 6px solid #f59e0b;'>
+                        <h3 style='color: #f59e0b; margin-top:0;'>⭐ Bonus Feature: Feedback System & Model Improvement</h3>
+                        <p style='color: #cbd5e1; font-size:14px;'>Rate this recommendation to help us improve the AI matching model weights and recommendation quality!</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        with st.form("feedback_form"):
+                            star_rating = st.radio("Rate Recommendation", ["⭐⭐⭐⭐⭐ (5/5)", "⭐⭐⭐⭐ (4/5)", "⭐⭐⭐ (3/5)", "⭐⭐ (2/5)", "⭐ (1/5)"], horizontal=True)
+                            feedback_comment = st.text_input("Improve Model / Comments", placeholder="Suggest improvements or feedback for future recommendations...")
+                            submit_feedback = st.form_submit_button("Submit Rating & Improve Model")
+                            
+                            if submit_feedback:
+                                st.session_state.feedback_db.append({
+                                    "student_name": st.session_state.user_name,
+                                    "recommendation": top_track_recorded,
+                                    "rating": star_rating,
+                                    "comments": feedback_comment if feedback_comment else "No comments provided.",
+                                    "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+                                })
+                                st.success("🎉 **Thank you!** Your feedback has been recorded to fine-tune and improve the recommendation model.")
                 else:
-                    st.info("💡 **Submit candidate profile details on the left panel to run Explainable AI Verification, Technology Classification, GitHub API, Portfolio Evaluation, Dynamic Confidence Scoring, and Recommendation Logging.**")
+                    st.info("💡 **Submit candidate profile details on the left panel to run Explainable AI Verification, Technology Classification, GitHub API, Portfolio Evaluation, Dynamic Confidence Scoring, Recommendation Logging, and the Bonus Feedback System.**")
 
         with tab_mentors:
             st.markdown("<div class='section-title'>👨‍🏫 Expert Mentor Directory (10 Industry Specialists)</div>", unsafe_allow_html=True)
@@ -1005,7 +1047,7 @@ else:
     # ---------------------------------------------------
     elif st.session_state.user_role == "Admin":
         st.markdown(f"<div class='main-title'>🛠️ Admin Intelligence Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, recommendation history logs, and Mentor Database management.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, recommendation history logs, student feedback metrics, and Mentor Database management.</div>", unsafe_allow_html=True)
         
         st.markdown("<div class='section-title'>System Analytics Overview</div>", unsafe_allow_html=True)
         
@@ -1013,18 +1055,31 @@ else:
         with c1:
             st.markdown("<div class='metric'><p>Total Students</p><h2>48</h2></div>", unsafe_allow_html=True)
         with c2:
-            st.markdown("<div class='metric'><p>Total Recommendation Logs</p><h2>{len(st.session_state.recommendation_history_db)}</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric'><p>Recommendation Logs</p><h2>{len(st.session_state.recommendation_history_db)}</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown("<div class='metric'><p>Active Mentors</p><h2>10 Experts</h2></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='metric'><p>Feedback Ratings</p><h2>{len(st.session_state.feedback_db)}</h2></div>", unsafe_allow_html=True)
         with c4:
             approved_total = sum(1 for s in st.session_state.submissions if s['status'] == 'Approved')
             st.markdown(f"<div class='metric'><p>Approved Capstones</p><h2>{approved_total}</h2></div>", unsafe_allow_html=True)
 
         st.markdown("<br><br>", unsafe_allow_html=True)
 
-        st.markdown("<div class='section-title'>Global Recommendation History Logs (Database)</div>", unsafe_allow_html=True)
-        st.write("Complete history of all student recommendations generated by the AI evaluation engine.")
+        st.markdown("<div class='section-title'>⭐ Student Feedback & Model Improvement Logs</div>", unsafe_allow_html=True)
+        st.write("Review ratings and comments submitted by students to improve recommendation accuracy.")
 
+        for fb in st.session_state.feedback_db:
+            st.markdown(f"""
+            <div class='job-card' style='border-left: 6px solid #f59e0b;'>
+            <p style='line-height:1.8; margin:0;'>
+            <b>🎓 Student:</b> {fb['student_name'].capitalize()} | <b>⚡ Track:</b> {fb['recommendation']}<br>
+            <b>⭐ Rating:</b> <span style='color:#f59e0b; font-weight:900;'>{fb['rating']}</span> | <b>📅 Date:</b> {fb['date']}<br>
+            <b>💬 Model Improvement Comments:</b> {fb['comments']}
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>Global Recommendation History Logs (Database)</div>", unsafe_allow_html=True)
         for hist in st.session_state.recommendation_history_db:
             st.markdown(f"""
             <div class='job-card' style='border-left: 6px solid #2563eb;'>
@@ -1037,7 +1092,6 @@ else:
 
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("<div class='section-title'>Mentor Database Management</div>", unsafe_allow_html=True)
-        st.write("Complete directory of active mentors, their experience, expertise, availability, and active student rosters.")
 
         for idx, mentor in enumerate(st.session_state.mentors_db):
             with st.expander(f"👨‍🏫 {mentor['mentor_name']} — {mentor['expertise'].split(',')[0]}"):
