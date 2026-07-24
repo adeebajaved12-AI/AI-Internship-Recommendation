@@ -8,13 +8,6 @@ import chromadb
 import numpy as np
 from auth import init_db, register_user, authenticate_user
 
-# Multi-language resume parsing support imports
-from langdetect import detect, DetectorFactory
-from googletrans import Translator
-
-DetectorFactory.seed = 0
-translator = Translator()
-
 # Initialize SQLite database for users
 init_db()
 
@@ -49,7 +42,7 @@ if "recommendation_history_db" not in st.session_state:
         {
             "student_name": "adeeba",
             "recommendation": "Generative AI & LLM Intern",
-            "date": "2026-07-24 22:50",
+            "date": "2026-07-24 22:45",
             "mentor": "Dr. Hamera Javed"
         }
     ]
@@ -162,7 +155,7 @@ if "mentors_db" not in st.session_state:
 def load_ai_engine():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     chroma_client = chromadb.Client()
-    collection_name = "ezitech_ai_internship_tracks_expanded_v6"
+    collection_name = "ezitech_ai_internship_tracks_expanded_v5"
     
     try:
         collection = chroma_client.get_collection(name=collection_name)
@@ -284,24 +277,6 @@ def extract_text_from_pdf(uploaded_file):
     except Exception as e:
         print(f"Error reading PDF: {e}")
     return text
-
-def process_multilingual_text(input_text):
-    if not input_text or not input_text.strip():
-        return "en", "", ""
-    try:
-        detected_lang = detect(input_text)
-    except:
-        detected_lang = "en"
-    
-    translated_text = input_text
-    if detected_lang != "en":
-        try:
-            translation = translator.translate(input_text, dest="en")
-            translated_text = translation.text
-        except:
-            translated_text = input_text
-            
-    return detected_lang, input_text, translated_text
 
 def classify_technology_domain(skills_text):
     text_lower = skills_text.lower()
@@ -666,7 +641,7 @@ else:
     # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, dynamic confidence scoring, Explainable AI dashboard, recommendation history, feedback system, and multi-language resume processing (English & Urdu).</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, dynamic confidence scoring, Explainable AI dashboard, recommendation history, and bonus feedback system.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -714,57 +689,52 @@ else:
                     """, unsafe_allow_html=True)
 
         with tab_rec:
-            st.markdown("<div class='section-title'>Explainable AI Dashboard, Multi-language Resume & Feedback System</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>Explainable AI Dashboard, Technology Classifier & Feedback System</div>", unsafe_allow_html=True)
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
-                st.markdown("### Candidate Profile Submission (English / اردو)")
+                st.markdown("### Candidate Profile Submission")
                 with st.form("profile_form"):
-                    skills_input = st.text_input("Technical Skills / ہنر", placeholder="Python, TensorFlow, CNN or پائیتھون, مصنوعی ذہانت...")
-                    resume_file = st.file_uploader("Upload Resume (PDF - English / Urdu)", type=["pdf"])
+                    skills_input = st.text_input("Technical Skills", placeholder="Python, TensorFlow, CNN or PHP, Laravel...")
+                    resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
                     github_url = st.text_input("GitHub Profile URL", placeholder="https://github.com/username")
                     portfolio_url = st.text_input("Portfolio / GitHub Pages URL", placeholder="https://username.github.io")
                     st.markdown("<br>", unsafe_allow_html=True)
                     analyze = st.form_submit_button("Run Complete Enterprise Evaluation")
 
             with right:
-                st.markdown("### Explainable AI Dashboard & Multi-language Verification")
+                st.markdown("### Explainable AI Dashboard & Professional Verification")
                 if analyze:
                     if not skills_input and not resume_file and not github_url and not portfolio_url:
                         st.warning("⚠️ Please provide at least technical skills, resume PDF, GitHub URL, or portfolio link.")
                     else:
-                        with st.spinner("Step 1/7: Parsing Candidate Resume PDF..."):
+                        with st.spinner("Step 1/6: Parsing Candidate Resume PDF..."):
                             time.sleep(0.3)
-                            raw_pdf_text = extract_text_from_pdf(resume_file) if resume_file else ""
+                            resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
                         
-                        with st.spinner("Step 2/7: Detecting Language & Translating via langdetect / googletrans..."):
+                        with st.spinner("Step 2/6: Running Automated Technology Classifier..."):
                             time.sleep(0.3)
-                            combined_raw = skills_input + " " + raw_pdf_text
-                            detected_lang_code, original_txt, translated_txt = process_multilingual_text(combined_raw)
-                            lang_name = "Urdu (اردو)" if detected_lang_code == "ur" else ("English" if detected_lang_code == "en" else f"Other ({detected_lang_code})")
-                        
-                        with st.spinner("Step 3/7: Running Automated Technology Classifier..."):
-                            time.sleep(0.3)
-                            detected_domain = classify_technology_domain(translated_txt)
-                            skills_count_extracted = len(translated_txt.replace(",", " ").split())
+                            combined_text_for_classifier = skills_input + " " + resume_text
+                            detected_domain = classify_technology_domain(combined_text_for_classifier)
+                            skills_count_extracted = len(combined_text_for_classifier.replace(",", " ").split())
                             skills_found_display = max(12, min(24, skills_count_extracted))
                         
-                        with st.spinner("Step 4/7: Querying Live GitHub API (Followers, Repos, Commits)..."):
+                        with st.spinner("Step 3/6: Querying Live GitHub API (Followers, Repos, Commits)..."):
                             time.sleep(0.3)
                             github_analysis = fetch_github_profile_analysis(github_url) if github_url else None
                         
-                        with st.spinner("Step 5/7: Evaluating Portfolio / GitHub Pages..."):
+                        with st.spinner("Step 4/6: Evaluating Portfolio / GitHub Pages..."):
                             time.sleep(0.3)
                             repo_count_val = github_analysis.get("repositories", 5) if github_analysis and "repositories" in github_analysis else 5
                             portfolio_eval = evaluate_portfolio(portfolio_url, repo_count_val)
                         
-                        with st.spinner("Step 6/7: Evaluating ATS Compatibility & Resume Quality..."):
+                        with st.spinner("Step 5/6: Evaluating ATS Compatibility & Resume Quality..."):
                             time.sleep(0.3)
-                            scores = evaluate_resume_metrics(translated_txt, skills_input)
+                            scores = evaluate_resume_metrics(resume_text, skills_input)
                         
-                        with st.spinner("Step 7/7: Running ChromaDB Vector Search across 10 Tracks & Saving Recommendation History..."):
+                        with st.spinner("Step 6/6: Running ChromaDB Vector Search across 10 Tracks & Saving Recommendation History..."):
                             time.sleep(0.3)
-                            fused_profile_data = f"Detected Domain: {detected_domain} | Manual Skills: {translated_txt[:1200]}"
+                            fused_profile_data = f"Detected Domain: {detected_domain} | Manual Skills: {skills_input} | Resume Context: {resume_text[:1200]}"
                             search_results, query_embedding = run_vector_semantic_search(fused_profile_data)
                             
                             # Automatically record recommendation history to database
@@ -782,25 +752,14 @@ else:
                                     "mentor": top_mentor_recorded
                                 })
                         
-                        st.success("✅ **Enterprise Evaluation, Multi-Language Processing & Recommendation Logging Completed!**")
-                        
-                        # Multi-Language Detection Card
-                        st.markdown(f"""
-                        <div class='job-card' style='border-left: 6px solid #8b5cf6;'>
-                        <h3 style='color: #8b5cf6; margin-top:0;'>🌐 Multi-language Resume Processing (langdetect & googletrans)</h3>
-                        <p style='line-height:1.8;'>
-                        <b>Detected Language:</b> <span style='color:#38bdf8; font-weight:900;'>{lang_name}</span> (Code: <code>{detected_lang_code}</code>)<br>
-                        <b>Translation Status:</b> Successfully translated & normalized to English for vector matching.
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.success("✅ **Enterprise Evaluation, Explainable AI & Recommendation Logging Completed!**")
                         
                         # Explainable AI Dashboard
                         st.markdown(f"""
                         <div class='job-card' style='border-left: 6px solid #10b981;'>
                         <h3 style='color: #10b981; margin-top:0;'>🧠 Explainable AI Dashboard (Professional Version)</h3>
                         <p style='line-height:1.9; font-size:15px;'>
-                        <b>Resume Parsed & Translated</b> ✔<br>
+                        <b>Resume Parsed</b> ✔<br>
                         <b>{skills_found_display} Skills Found</b> ✔<br>
                         <b>GitHub Analysed</b> ✔<br>
                         <b>Portfolio Checked</b> ✔<br>
@@ -877,7 +836,7 @@ else:
                         else:
                             top_track_title = "Generative AI & LLM Intern"
 
-                        gap_checks = perform_skill_gap_analysis(translated_txt, top_req_skills)
+                        gap_checks = perform_skill_gap_analysis(skills_input + " " + resume_text, top_req_skills)
                         
                         gap_html = f"<div class='job-card' style='border-left: 6px solid #2563eb;'><h3>🔍 Professional Skill Gap Analysis</h3><p style='line-height:1.9;'><b>Top Matched Track:</b> {top_track_title}<br><br>"
                         for sk, status in gap_checks:
@@ -942,7 +901,7 @@ else:
                                 })
                                 st.success("🎉 **Thank you!** Your feedback has been recorded to fine-tune and improve the recommendation model.")
                 else:
-                    st.info("💡 **Submit candidate profile details on the left panel (in English or Urdu) to run Multi-language detection, Explainable AI Verification, Technology Classification, GitHub API, Portfolio Evaluation, Dynamic Confidence Scoring, Recommendation Logging, and the Bonus Feedback System.**")
+                    st.info("💡 **Submit candidate profile details on the left panel to run Explainable AI Verification, Technology Classification, GitHub API, Portfolio Evaluation, Dynamic Confidence Scoring, Recommendation Logging, and the Bonus Feedback System.**")
 
         with tab_mentors:
             st.markdown("<div class='section-title'>👨‍🏫 Expert Mentor Directory (10 Industry Specialists)</div>", unsafe_allow_html=True)
