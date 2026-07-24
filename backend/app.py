@@ -35,7 +35,7 @@ if "user_role" not in st.session_state:
 if "user_name" not in st.session_state:
     st.session_state.user_name = ""
 
-# Shared storage for capstone submissions (for demo/session continuity)
+# Shared storage for capstone submissions
 if "submissions" not in st.session_state:
     st.session_state.submissions = [
         {
@@ -46,6 +46,81 @@ if "submissions" not in st.session_state:
             "notes": "Built local LLM RAG interface with Streamlit and ChromaDB.",
             "status": "Pending",
             "feedback": ""
+        }
+    ]
+
+# Shared storage for Mentors Database (10 Mentors matching the 10 Tracks)
+if "mentors_db" not in st.session_state:
+    st.session_state.mentors_db = [
+        {
+            "mentor_name": "Dr. Hamera Javed",
+            "experience": "8 Years (Ph.D. in AI)",
+            "expertise": "Generative AI, LLMs, LangChain, RAG Pipelines",
+            "availability": "Mon-Fri (4:00 PM - 7:00 PM)",
+            "current_students": "Adeeba, Sara, Hamza"
+        },
+        {
+            "mentor_name": "Ali Ahmed",
+            "experience": "6 Years",
+            "expertise": "Machine Learning, Predictive Analytics, Scikit-Learn",
+            "availability": "Tue, Thu (2:00 PM - 5:00 PM)",
+            "current_students": "Usman, Bilal"
+        },
+        {
+            "mentor_name": "Dr. Kamran",
+            "experience": "9 Years (Ph.D. NLP)",
+            "expertise": "Natural Language Processing, Transformers, HuggingFace",
+            "availability": "Mon, Wed (10:00 AM - 1:00 PM)",
+            "current_students": "Zainab, Fahad"
+        },
+        {
+            "mentor_name": "Sarah Khan",
+            "experience": "7 Years",
+            "expertise": "Computer Vision, OpenCV, PyTorch, YOLO",
+            "availability": "Mon-Wed (3:00 PM - 6:00 PM)",
+            "current_students": "Ayesha, Omar"
+        },
+        {
+            "mentor_name": "Usman Malik",
+            "experience": "5 Years",
+            "expertise": "Web Development, Frontend AI Dashboards, React, Streamlit",
+            "availability": "Fri, Sat (11:00 AM - 2:00 PM)",
+            "current_students": "Ali, Danish"
+        },
+        {
+            "mentor_name": "Bilal Ahmed",
+            "experience": "6 Years",
+            "expertise": "Backend Engineering, FastAPI, Flask, MySQL, REST APIs",
+            "availability": "Tue, Fri (1:00 PM - 4:00 PM)",
+            "current_students": "Kashif, Mariam"
+        },
+        {
+            "mentor_name": "Ayesha Siddiqui",
+            "experience": "6 Years",
+            "expertise": "Data Science, Tableau, PowerBI, Big Data Analytics",
+            "availability": "Mon, Thu (5:00 PM - 8:00 PM)",
+            "current_students": "Nimra, Zeeshan"
+        },
+        {
+            "mentor_name": "Zainab Tariq",
+            "experience": "7 Years (AWS Certified)",
+            "expertise": "Cloud Computing, AWS Infrastructure, Serverless, Terraform",
+            "availability": "Wed, Sat (2:00 PM - 5:00 PM)",
+            "current_students": "Saad, Hira"
+        },
+        {
+            "mentor_name": "Fahad Mustafa",
+            "experience": "8 Years",
+            "expertise": "DevOps, CI/CD Pipelines, Docker, Kubernetes, GitHub Actions",
+            "availability": "Mon-Thu (6:00 PM - 9:00 PM)",
+            "current_students": "Talha, Sana"
+        },
+        {
+            "mentor_name": "Dr. Salman Akram",
+            "experience": "10 Years (Ph.D. CS)",
+            "expertise": "Advanced Algorithm Design, Enterprise System Architecture",
+            "availability": "Sat, Sun (12:00 PM - 3:00 PM)",
+            "current_students": "Jawad, Rida"
         }
     ]
 
@@ -63,13 +138,12 @@ def load_ai_engine():
     except:
         collection = chroma_client.create_collection(name=collection_name)
         
-        # 10 Diverse Industry Internship Tracks
         tracks = [
             {
                 "id": "track_ai",
                 "title": "Artificial Intelligence (AI) Intern",
                 "company": "Ezitech Portal / Arch Technologies",
-                "mentor": "Dr. Hamera Javed",
+                "mentor": "Dr. Salman Akram",
                 "skills": "Python, TensorFlow, PyTorch, Neural Networks, Algorithm Design, AI Research",
                 "description": "Design foundational artificial intelligence models, implement core algorithms, and research cutting-edge AI architectures."
             },
@@ -312,7 +386,7 @@ def run_vector_semantic_search(query_text):
     query_embedding = embed_model.encode(query_text).tolist()
     search_results = vector_collection.query(
         query_embeddings=[query_embedding],
-        n_results=3  # Top 3 matching tracks from 10 options
+        n_results=3
     )
     return search_results
 
@@ -511,7 +585,7 @@ else:
     # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Here is an overview of your internship application, vector recommendation across 10 specialized tracks, and final phase status.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, vector recommendation across 10 specialized tracks, and mentor connectivity.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -519,7 +593,7 @@ else:
         with c2:
             st.markdown("<div class='metric'><p>Available Tracks</p><h2>10 Domains</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown("<div class='metric'><p>Assigned Mentor</p><h2>Dr. Hamera Javed</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Active Mentors</p><h2>10 Experts</h2></div>", unsafe_allow_html=True)
         with c4:
             user_sub_status = "Pending"
             for sub in st.session_state.submissions:
@@ -529,9 +603,10 @@ else:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        tab_dash, tab_rec, tab_roadmap, tab_phase3, tab_certs = st.tabs([
+        tab_dash, tab_rec, tab_mentors, tab_roadmap, tab_phase3, tab_certs = st.tabs([
             "📊 Dashboard Overview", 
             "🔍 Match, GitHub, Portfolio & Gap", 
+            "👨‍🏫 Mentor Database",
             "🗺️ Roadmap", 
             "🚀 Phase 3: Final Deployment", 
             "📜 Certificates"
@@ -539,7 +614,7 @@ else:
 
         with tab_dash:
             st.markdown("<div class='section-title'>Student Activity Hub</div>", unsafe_allow_html=True)
-            st.info("Monitor your overall progress across 10 specialized internship tracks, execute vector semantic matching, and complete final phase requirements.")
+            st.info("Monitor your overall progress across 10 specialized internship tracks, consult expert mentors, and complete final phase requirements.")
 
         with tab_rec:
             st.markdown("<div class='section-title'>AI Matching across 10 Tracks, Resume Score, GitHub API, Portfolio & Skill Gap</div>", unsafe_allow_html=True)
@@ -630,7 +705,7 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Skill Gap Analysis Professional Card (Using top matched track)
+                        # Skill Gap Analysis Professional Card
                         top_req_skills = "Python, LangChain, LlamaIndex, Ollama, Vector Databases, ChromaDB, RAG, Streamlit"
                         if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
                             top_req_skills = search_results['metadatas'][0][0]['skills']
@@ -672,6 +747,23 @@ else:
                                 """, unsafe_allow_html=True)
                 else:
                     st.info("💡 **Submit candidate profile details on the left panel to execute Resume Score, Live GitHub API, Portfolio Evaluation, Skill Gap, and 10-Track Vector Matching.**")
+
+        with tab_mentors:
+            st.markdown("<div class='section-title'>👨‍🏫 Expert Mentor Directory (10 Industry Specialists)</div>", unsafe_allow_html=True)
+            st.write("Browse our panel of expert mentors across all 10 specialization domains, check their availability, and connect for guidance.")
+            
+            for mentor in st.session_state.mentors_db:
+                st.markdown(f"""
+                <div class='job-card' style='border-left: 6px solid #10b981;'>
+                <h3 style='color: #10b981; margin-top:0;'>{mentor['mentor_name']}</h3>
+                <p style='line-height:1.8;'>
+                <b>⏳ Experience:</b> {mentor['experience']}<br>
+                <b>🎯 Core Expertise:</b> {mentor['expertise']}<br>
+                <b>🕒 Availability:</b> {mentor['availability']}<br>
+                <b>👥 Current Mentees:</b> {mentor['current_students']}
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
 
         with tab_roadmap:
             st.markdown("<div class='section-title'>Learning & Internship Roadmap</div>", unsafe_allow_html=True)
@@ -736,49 +828,72 @@ else:
     # ---------------------------------------------------
     elif st.session_state.user_role == "Mentor":
         st.markdown(f"<div class='main-title'>👨‍🏫 Mentor Portal Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Review assigned student capstone submissions across all domains, evaluate code, accept/reject, and provide feedback.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Review assigned student capstone submissions, evaluate code, accept/reject, and manage your mentorship availability.</div>", unsafe_allow_html=True)
 
-        st.markdown("<div class='section-title'>Assigned Students & Capstone Submissions</div>", unsafe_allow_html=True)
+        tab_m_eval, tab_m_dir = st.tabs(["📝 Submissions & Evaluation", "⚙️ My Mentor Profile & Availability"])
 
-        if not st.session_state.submissions:
-            st.info("No student submissions found yet.")
-        else:
-            for idx, sub in enumerate(st.session_state.submissions):
-                with st.container():
-                    st.markdown(f"""
-                    <div class='job-card'>
-                    <h3>Student: {sub['student_name'].capitalize()} ({sub['track']})</h3>
-                    <p style='line-height:1.7;'>
-                    <b>GitHub Repository:</b> <a href='{sub['repo']}' target='_blank'>{sub['repo']}</a><br>
-                    <b>Live Deployment:</b> <a href='{sub['live_url']}' target='_blank'>{sub['live_url']}</a><br>
-                    <b>Summary Notes:</b> {sub['notes']}<br>
-                    <b>Current Status:</b> <span style='color:#38bdf8; font-weight:900;'>{sub['status']}</span><br>
-                    <b>Existing Feedback:</b> {sub['feedback'] if sub['feedback'] else 'None provided yet.'}
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    with st.form(f"eval_form_{idx}"):
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            action = st.selectbox("Action", ["Pending", "Approved", "Rejected"], index=["Pending", "Approved", "Rejected"].index(sub['status']))
-                        with col_b:
-                            feedback_input = st.text_input("Mentor Comments & Feedback", value=sub['feedback'])
+        with tab_m_eval:
+            st.markdown("<div class='section-title'>Assigned Students & Capstone Submissions</div>", unsafe_allow_html=True)
+
+            if not st.session_state.submissions:
+                st.info("No student submissions found yet.")
+            else:
+                for idx, sub in enumerate(st.session_state.submissions):
+                    with st.container():
+                        st.markdown(f"""
+                        <div class='job-card'>
+                        <h3>Student: {sub['student_name'].capitalize()} ({sub['track']})</h3>
+                        <p style='line-height:1.7;'>
+                        <b>GitHub Repository:</b> <a href='{sub['repo']}' target='_blank'>{sub['repo']}</a><br>
+                        <b>Live Deployment:</b> <a href='{sub['live_url']}' target='_blank'>{sub['live_url']}</a><br>
+                        <b>Summary Notes:</b> {sub['notes']}<br>
+                        <b>Current Status:</b> <span style='color:#38bdf8; font-weight:900;'>{sub['status']}</span><br>
+                        <b>Existing Feedback:</b> {sub['feedback'] if sub['feedback'] else 'None provided yet.'}
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
-                        update_btn = st.form_submit_button("Submit Evaluation & Feedback")
-                        
-                        if update_btn:
-                            sub['status'] = action
-                            sub['feedback'] = feedback_input
-                            st.success(f"Successfully updated evaluation for {sub['student_name']}!")
-                            st.rerun()
+                        with st.form(f"eval_form_{idx}"):
+                            col_a, col_b = st.columns(2)
+                            with col_a:
+                                action = st.selectbox("Action", ["Pending", "Approved", "Rejected"], index=["Pending", "Approved", "Rejected"].index(sub['status']))
+                            with col_b:
+                                feedback_input = st.text_input("Mentor Comments & Feedback", value=sub['feedback'])
+                            
+                            update_btn = st.form_submit_button("Submit Evaluation & Feedback")
+                            
+                            if update_btn:
+                                sub['status'] = action
+                                sub['feedback'] = feedback_input
+                                st.success(f"Successfully updated evaluation for {sub['student_name']}!")
+                                st.rerun()
+
+        with tab_m_dir:
+            st.markdown("<div class='section-title'>Manage Your Mentor Profile & Schedule</div>", unsafe_allow_html=True)
+            
+            # Find current mentor record
+            current_m_data = next((m for m in st.session_state.mentors_db if m["mentor_name"].lower() == st.session_state.user_name.lower() or m["mentor_name"].split()[1].lower() in st.session_state.user_name.lower()), st.session_state.mentors_db[0])
+            
+            with st.form("mentor_profile_update"):
+                m_exp = st.text_input("Experience", value=current_m_data["experience"])
+                m_exp_text = st.text_area("Core Expertise", value=current_m_data["expertise"])
+                m_avail = st.text_input("Availability Hours", value=current_m_data["availability"])
+                m_students = st.text_input("Current Mentees", value=current_m_data["current_students"])
+                
+                update_mentor_btn = st.form_submit_button("Update Profile Details")
+                if update_mentor_btn:
+                    current_m_data["experience"] = m_exp
+                    current_m_data["expertise"] = m_exp_text
+                    current_m_data["availability"] = m_avail
+                    current_m_data["current_students"] = m_students
+                    st.success("✅ Mentor profile & availability updated successfully!")
 
     # ---------------------------------------------------
     # ADMIN VIEW
     # ---------------------------------------------------
     elif st.session_state.user_role == "Admin":
         st.markdown(f"<div class='main-title'>🛠️ Admin Intelligence Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, 10-track distribution, and vector tracking metrics.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, 10-track distribution, and Mentor Database management.</div>", unsafe_allow_html=True)
         
         st.markdown("<div class='section-title'>System Analytics Overview</div>", unsafe_allow_html=True)
         
@@ -788,13 +903,35 @@ else:
         with c2:
             st.markdown("<div class='metric'><p>Total Internship Tracks</p><h2>10 Domains</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown("<div class='metric'><p>Active Mentors</p><h2>5</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Active Mentors</p><h2>10 Experts</h2></div>", unsafe_allow_html=True)
         with c4:
             approved_total = sum(1 for s in st.session_state.submissions if s['status'] == 'Approved')
             st.markdown(f"<div class='metric'><p>Approved Capstones</p><h2>{approved_total}</h2></div>", unsafe_allow_html=True)
 
         st.markdown("<br><br>", unsafe_allow_html=True)
 
+        st.markdown("<div class='section-title'>Mentor Database Management</div>", unsafe_allow_html=True)
+        st.write("Complete directory of active mentors, their experience, expertise, availability, and active student rosters.")
+
+        for idx, mentor in enumerate(st.session_state.mentors_db):
+            with st.expander(f"👨‍🏫 {mentor['mentor_name']} — {mentor['expertise'].split(',')[0]}"):
+                with st.form(f"admin_mentor_{idx}"):
+                    adm_name = st.text_input("Mentor Name", value=mentor["mentor_name"])
+                    adm_exp = st.text_input("Experience", value=mentor["experience"])
+                    adm_expertise = st.text_input("Expertise", value=mentor["expertise"])
+                    adm_avail = st.text_input("Availability", value=mentor["availability"])
+                    adm_students = st.text_input("Current Students", value=mentor["current_students"])
+                    
+                    save_adm_mentor = st.form_submit_button("Save Mentor Details")
+                    if save_adm_mentor:
+                        mentor["mentor_name"] = adm_name
+                        mentor["experience"] = adm_exp
+                        mentor["expertise"] = adm_expertise
+                        mentor["availability"] = adm_avail
+                        mentor["current_students"] = adm_students
+                        st.success(f"Updated records for {adm_name}!")
+
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("<div class='section-title'>10-Track Domain Distribution & Performance Visualizer</div>", unsafe_allow_html=True)
         
         chart_col1, chart_col2 = st.columns(2, gap="large")
