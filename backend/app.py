@@ -131,7 +131,7 @@ if "mentors_db" not in st.session_state:
 def load_ai_engine():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     chroma_client = chromadb.Client()
-    collection_name = "ezitech_ai_internship_tracks_expanded"
+    collection_name = "ezitech_ai_internship_tracks_expanded_v2"
     
     try:
         collection = chroma_client.get_collection(name=collection_name)
@@ -257,7 +257,6 @@ def extract_text_from_pdf(uploaded_file):
 def classify_technology_domain(skills_text):
     text_lower = skills_text.lower()
     
-    # Keyword mapping for classifier
     ai_keywords = ["python", "tensorflow", "pytorch", "cnn", "yolo", "opencv", "langchain", "llm", "rag", "llama", "huggingface", "nlp", "transformers", "ai", "machine learning"]
     web_keywords = ["php", "laravel", "html", "css", "javascript", "react", "tailwind", "ui/ux", "wordpress", "vue", "web"]
     backend_keywords = ["fastapi", "flask", "node.js", "express", "mysql", "postgresql", "sql", "jwt", "api"]
@@ -415,7 +414,19 @@ def run_vector_semantic_search(query_text):
         query_embeddings=[query_embedding],
         n_results=3
     )
-    return search_results
+    return search_results, query_embedding
+
+def calculate_dynamic_confidence(resume_score, github_score, portfolio_rating, vector_distance):
+    # Vector similarity score (closer distance = higher similarity, range 0 to 1)
+    vector_sim_score = max(50.0, float(100.0 - (vector_distance * 45.0)))
+    
+    # Handle github score if None
+    gh_score = github_score if github_score is not None else 75.0
+    
+    # Weighted Formula
+    # Resume: 30%, GitHub: 25%, Portfolio: 25%, Vector Embedding Similarity: 20%
+    dynamic_conf = (resume_score * 0.30) + (gh_score * 0.25) + (portfolio_rating * 0.25) + (vector_sim_score * 0.20)
+    return int(min(99, max(60, dynamic_conf)))
 
 # ---------------------------------------------------
 # Professional CSS Styling
@@ -612,7 +623,7 @@ else:
     # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, and vector track recommendations.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, and dynamic confidence scoring.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -644,7 +655,7 @@ else:
             st.info("Monitor your overall progress across 10 specialized internship tracks, consult expert mentors, and complete final phase requirements.")
 
         with tab_rec:
-            st.markdown("<div class='section-title'>Automated Technology Classifier, Resume Score, GitHub API & Vector Matching</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>Automated Technology Classifier, Dynamic Confidence Score & Vector Matching</div>", unsafe_allow_html=True)
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
@@ -658,7 +669,7 @@ else:
                     analyze = st.form_submit_button("Run Complete Enterprise Evaluation")
 
             with right:
-                st.markdown("### Evaluation & Automated Technology Classifier")
+                st.markdown("### Evaluation, Technology Classifier & Dynamic Confidence Score")
                 if analyze:
                     if not skills_input and not resume_file and not github_url and not portfolio_url:
                         st.warning("⚠️ Please provide at least technical skills, resume PDF, GitHub URL, or portfolio link.")
@@ -685,12 +696,12 @@ else:
                             time.sleep(0.3)
                             scores = evaluate_resume_metrics(resume_text, skills_input)
                         
-                        with st.spinner("Step 6/6: Running ChromaDB Vector Search across 10 Tracks & Skill Gap Analysis..."):
+                        with st.spinner("Step 6/6: Running ChromaDB Vector Search across 10 Tracks & Calculating Dynamic Confidence..."):
                             time.sleep(0.3)
                             fused_profile_data = f"Detected Domain: {detected_domain} | Manual Skills: {skills_input} | Resume Context: {resume_text[:1200]}"
-                            search_results = run_vector_semantic_search(fused_profile_data)
+                            search_results, query_embedding = run_vector_semantic_search(fused_profile_data)
                         
-                        st.success("✅ **Enterprise Evaluation & Technology Classification Completed!**")
+                        st.success("✅ **Enterprise Evaluation & Dynamic Confidence Calculation Completed!**")
                         
                         # Technology Classifier Card
                         st.markdown(f"""
@@ -716,10 +727,12 @@ else:
                         """, unsafe_allow_html=True)
                         
                         # GitHub API Real Analysis Card
+                        gh_contrib_score = 75
                         if github_analysis:
                             if "error" in github_analysis:
                                 st.error(f"❌ **GitHub API Error:** {github_analysis['error']}")
                             else:
+                                gh_contrib_score = github_analysis.get('contribution_score', 75)
                                 st.markdown(f"""
                                 <div class='job-card' style='border-left: 6px solid #10b981;'>
                                 <h3 style='color: #10b981; margin-top:0;'>🐙 Live GitHub API Analysis (@{github_analysis['username']})</h3>
@@ -729,7 +742,7 @@ else:
                                 <b>⭐ Total Stars:</b> {github_analysis['stars']}<br>
                                 <b>💻 Top Languages:</b> {github_analysis['languages']}<br>
                                 <b>📈 Estimated Commits:</b> {github_analysis['commits']}<br>
-                                <b>🔥 Contribution Score:</b> <span style='color:#38bdf8; font-weight:900;'>{github_analysis['contribution_score']} / 100</span>
+                                <b>🔥 Contribution Score:</b> <span style='color:#38bdf8; font-weight:900;'>{gh_contrib_score} / 100</span>
                                 </p>
                                 </div>
                                 """, unsafe_allow_html=True)
@@ -769,20 +782,27 @@ else:
                         st.markdown(gap_html, unsafe_allow_html=True)
                         
                         st.markdown("<br>", unsafe_allow_html=True)
-                        st.markdown("### Top 3 Vector-Matched Internship Tracks (from 10 Domains)")
+                        st.markdown("### Top 3 Vector-Matched Internship Tracks (with Dynamic Confidence Scores)")
                         
                         if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
                             for i in range(len(search_results['metadatas'][0])):
                                 meta = search_results['metadatas'][0][i]
                                 distance = search_results['distances'][0][i] if 'distances' in search_results else 0.15
-                                match_score = max(80, int(100 - (distance * 40)))
+                                
+                                # Dynamic Confidence Calculation
+                                dyn_confidence = calculate_dynamic_confidence(
+                                    scores['overall'], 
+                                    gh_contrib_score, 
+                                    portfolio_eval['rating'], 
+                                    distance
+                                )
                                 
                                 st.markdown(f"""
                                 <div class='job-card'>
                                 <h3>{meta['title']}</h3>
                                 <p style='line-height:1.7;'>
                                 <b>Organization:</b> {meta['company']}<br>
-                                <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
+                                <b>⚡ Dynamic Confidence Score:</b> <span style='color:#38bdf8; font-weight:900;'>{dyn_confidence}%</span> <span style='font-size:12px; color:#94a3b8;'>(Calculated via Resume + GitHub + Portfolio + Vector Embedding)</span><br>
                                 <b>Assigned Mentor:</b> {meta['mentor']}<br>
                                 <b>Required Stack:</b> {meta['skills']}<br>
                                 <b>Description:</b> {meta.get('description', '')}
@@ -790,7 +810,7 @@ else:
                                 </div>
                                 """, unsafe_allow_html=True)
                 else:
-                    st.info("💡 **Submit candidate profile details on the left panel to run Technology Classification, Resume Score, GitHub API, Portfolio Evaluation, and Vector Matching.**")
+                    st.info("💡 **Submit candidate profile details on the left panel to run Technology Classification, Resume Score, GitHub API, Portfolio Evaluation, and Dynamic Confidence Scoring.**")
 
         with tab_mentors:
             st.markdown("<div class='section-title'>👨‍🏫 Expert Mentor Directory (10 Industry Specialists)</div>", unsafe_allow_html=True)
