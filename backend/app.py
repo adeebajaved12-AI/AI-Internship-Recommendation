@@ -2,6 +2,7 @@ import streamlit as st
 import time
 import os
 import requests
+from datetime import datetime
 from sentence_transformers import SentenceTransformer
 import chromadb
 import numpy as np
@@ -34,6 +35,17 @@ if "user_role" not in st.session_state:
     st.session_state.user_role = None
 if "user_name" not in st.session_state:
     st.session_state.user_name = ""
+
+# Shared storage for recommendation history database
+if "recommendation_history_db" not in st.session_state:
+    st.session_state.recommendation_history_db = [
+        {
+            "student_name": "adeeba",
+            "recommendation": "Generative AI & LLM Intern",
+            "date": "2026-07-24 22:45",
+            "mentor": "Dr. Hamera Javed"
+        }
+    ]
 
 # Shared storage for capstone submissions
 if "submissions" not in st.session_state:
@@ -131,7 +143,7 @@ if "mentors_db" not in st.session_state:
 def load_ai_engine():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     chroma_client = chromadb.Client()
-    collection_name = "ezitech_ai_internship_tracks_expanded_v3"
+    collection_name = "ezitech_ai_internship_tracks_expanded_v4"
     
     try:
         collection = chroma_client.get_collection(name=collection_name)
@@ -617,7 +629,7 @@ else:
     # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, dynamic confidence scoring, and Explainable AI dashboard.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, dynamic confidence scoring, Explainable AI dashboard, and recommendation history.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -645,11 +657,27 @@ else:
         ])
 
         with tab_dash:
-            st.markdown("<div class='section-title'>Student Activity Hub</div>", unsafe_allow_html=True)
-            st.info("Monitor your overall progress across 10 specialized internship tracks, consult expert mentors, and complete final phase requirements.")
+            st.markdown("<div class='section-title'>Student Activity Hub & Recommendation History</div>", unsafe_allow_html=True)
+            st.info("Monitor your overall progress across 10 specialized internship tracks, consult expert mentors, and review your historical recommendation logs.")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("### 📋 Your Recommendation History Log")
+            user_history = [h for h in st.session_state.recommendation_history_db if h["student_name"].lower() == st.session_state.user_name.lower()]
+            if not user_history:
+                st.info("No recommendation history found yet. Run an evaluation in the Match tab to generate logs.")
+            else:
+                for hist in user_history:
+                    st.markdown(f"""
+                    <div class='job-card' style='border-left: 6px solid #38bdf8;'>
+                    <p style='line-height:1.8; margin:0;'>
+                    <b>🎓 Student:</b> {hist['student_name'].capitalize()} | <b>⚡ Recommended Track:</b> <span style='color:#38bdf8; font-weight:900;'>{hist['recommendation']}</span><br>
+                    <b>📅 Timestamp:</b> {hist['date']} | <b>👨‍🏫 Assigned Mentor:</b> {hist['mentor']}
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
         with tab_rec:
-            st.markdown("<div class='section-title'>Explainable AI Dashboard, Technology Classifier & Dynamic Confidence</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>Explainable AI Dashboard, Technology Classifier & Recommendation History</div>", unsafe_allow_html=True)
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
@@ -692,14 +720,25 @@ else:
                             time.sleep(0.3)
                             scores = evaluate_resume_metrics(resume_text, skills_input)
                         
-                        with st.spinner("Step 6/6: Running ChromaDB Vector Search across 10 Tracks & Calculating Dynamic Confidence..."):
+                        with st.spinner("Step 6/6: Running ChromaDB Vector Search across 10 Tracks & Saving Recommendation History..."):
                             time.sleep(0.3)
                             fused_profile_data = f"Detected Domain: {detected_domain} | Manual Skills: {skills_input} | Resume Context: {resume_text[:1200]}"
                             search_results, query_embedding = run_vector_semantic_search(fused_profile_data)
+                            
+                            # Automatically record recommendation history to database
+                            if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
+                                top_meta = search_results['metadatas'][0][0]
+                                current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+                                st.session_state.recommendation_history_db.append({
+                                    "student_name": st.session_state.user_name,
+                                    "recommendation": top_meta['title'],
+                                    "date": current_timestamp,
+                                    "mentor": top_meta['mentor']
+                                })
                         
-                        st.success("✅ **Enterprise Evaluation & Explainable AI Verification Completed!**")
+                        st.success("✅ **Enterprise Evaluation, Explainable AI & Recommendation Logging Completed!**")
                         
-                        # 3. Explainable AI Dashboard (Professional Version)
+                        # Explainable AI Dashboard
                         st.markdown(f"""
                         <div class='job-card' style='border-left: 6px solid #10b981;'>
                         <h3 style='color: #10b981; margin-top:0;'>🧠 Explainable AI Dashboard (Professional Version)</h3>
@@ -709,7 +748,7 @@ else:
                         <b>GitHub Analysed</b> ✔<br>
                         <b>Portfolio Checked</b> ✔<br>
                         <b>Embedding Score</b> ✔<br>
-                        <b>Recommendation Generated</b> ✔
+                        <b>Recommendation Generated & Saved to DB</b> ✔
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -820,7 +859,7 @@ else:
                                 </div>
                                 """, unsafe_allow_html=True)
                 else:
-                    st.info("💡 **Submit candidate profile details on the left panel to run Explainable AI Verification, Technology Classification, GitHub API, Portfolio Evaluation, and Dynamic Confidence Scoring.**")
+                    st.info("💡 **Submit candidate profile details on the left panel to run Explainable AI Verification, Technology Classification, GitHub API, Portfolio Evaluation, Dynamic Confidence Scoring, and Recommendation Logging.**")
 
         with tab_mentors:
             st.markdown("<div class='section-title'>👨‍🏫 Expert Mentor Directory (10 Industry Specialists)</div>", unsafe_allow_html=True)
@@ -966,7 +1005,7 @@ else:
     # ---------------------------------------------------
     elif st.session_state.user_role == "Admin":
         st.markdown(f"<div class='main-title'>🛠️ Admin Intelligence Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, explainable AI metrics, and Mentor Database management.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, recommendation history logs, and Mentor Database management.</div>", unsafe_allow_html=True)
         
         st.markdown("<div class='section-title'>System Analytics Overview</div>", unsafe_allow_html=True)
         
@@ -974,7 +1013,7 @@ else:
         with c1:
             st.markdown("<div class='metric'><p>Total Students</p><h2>48</h2></div>", unsafe_allow_html=True)
         with c2:
-            st.markdown("<div class='metric'><p>Total Internship Tracks</p><h2>10 Domains</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Total Recommendation Logs</p><h2>{len(st.session_state.recommendation_history_db)}</h2></div>", unsafe_allow_html=True)
         with c3:
             st.markdown("<div class='metric'><p>Active Mentors</p><h2>10 Experts</h2></div>", unsafe_allow_html=True)
         with c4:
@@ -983,6 +1022,20 @@ else:
 
         st.markdown("<br><br>", unsafe_allow_html=True)
 
+        st.markdown("<div class='section-title'>Global Recommendation History Logs (Database)</div>", unsafe_allow_html=True)
+        st.write("Complete history of all student recommendations generated by the AI evaluation engine.")
+
+        for hist in st.session_state.recommendation_history_db:
+            st.markdown(f"""
+            <div class='job-card' style='border-left: 6px solid #2563eb;'>
+            <p style='line-height:1.8; margin:0;'>
+            <b>🎓 Student:</b> {hist['student_name'].capitalize()} | <b>⚡ Recommended Track:</b> <span style='color:#38bdf8; font-weight:900;'>{hist['recommendation']}</span><br>
+            <b>📅 Timestamp:</b> {hist['date']} | <b>👨‍🏫 Assigned Mentor:</b> {hist['mentor']}
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("<div class='section-title'>Mentor Database Management</div>", unsafe_allow_html=True)
         st.write("Complete directory of active mentors, their experience, expertise, availability, and active student rosters.")
 
@@ -1003,33 +1056,3 @@ else:
                         mentor["availability"] = adm_avail
                         mentor["current_students"] = adm_students
                         st.success(f"Updated records for {adm_name}!")
-
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>10-Track Domain Distribution & Performance Visualizer</div>", unsafe_allow_html=True)
-        
-        chart_col1, chart_col2 = st.columns(2, gap="large")
-        
-        with chart_col1:
-            st.markdown("### 📊 10-Track Enrollment Count")
-            domain_data = {
-                "AI": 8,
-                "ML": 9,
-                "NLP": 6,
-                "CV": 6,
-                "LLM": 10,
-                "Web": 5,
-                "Backend": 7,
-                "Data Science": 8,
-                "Cloud": 4,
-                "DevOps": 5
-            }
-            st.bar_chart(domain_data)
-            
-        with chart_col2:
-            st.markdown("### 📈 Explainable AI Activity Trend")
-            activity_trend = {
-                "Phase 1 Setup": 48,
-                "Phase 2 10-Track RAG": 44,
-                "Phase 3 Capstone": len(st.session_state.submissions)
-            }
-            st.bar_chart(activity_trend)
