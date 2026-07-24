@@ -40,7 +40,7 @@ if "submissions" not in st.session_state:
     st.session_state.submissions = [
         {
             "student_name": "adeeba",
-            "track": "Generative AI Intern",
+            "track": "Generative AI & LLM Intern",
             "repo": "https://github.com/adeeba/capstone-project",
             "live_url": "https://share.streamlit.io/adeeba/project",
             "notes": "Built local LLM RAG interface with Streamlit and ChromaDB.",
@@ -50,51 +50,100 @@ if "submissions" not in st.session_state:
     ]
 
 # ---------------------------------------------------
-# 1. AI Models & Vector DB Initialization (Cached)
+# 1. AI Models & Expanded Vector DB Initialization (Cached)
 # ---------------------------------------------------
 @st.cache_resource
 def load_ai_engine():
     model = SentenceTransformer('all-MiniLM-L6-v2')
     chroma_client = chromadb.Client()
-    collection_name = "ezitech_ai_internship_tracks"
+    collection_name = "ezitech_ai_internship_tracks_expanded"
     
     try:
         collection = chroma_client.get_collection(name=collection_name)
     except:
         collection = chroma_client.create_collection(name=collection_name)
         
+        # 10 Diverse Industry Internship Tracks
         tracks = [
             {
-                "id": "track_1",
-                "title": "Generative AI Intern",
+                "id": "track_ai",
+                "title": "Artificial Intelligence (AI) Intern",
                 "company": "Ezitech Portal / Arch Technologies",
                 "mentor": "Dr. Hamera Javed",
-                "skills": "Python, TensorFlow, Docker, AWS, LangChain, LLMs, Streamlit",
-                "description": "Build local LLM interfaces, RAG pipelines, and generative applications using state-of-the-art frameworks."
+                "skills": "Python, TensorFlow, PyTorch, Neural Networks, Algorithm Design, AI Research",
+                "description": "Design foundational artificial intelligence models, implement core algorithms, and research cutting-edge AI architectures."
             },
             {
-                "id": "track_2",
-                "title": "Machine Learning Intern",
-                "company": "Ezitech Portal Track",
+                "id": "track_ml",
+                "title": "Machine Learning (ML) Intern",
+                "company": "Ezitech Analytics Lab",
                 "mentor": "Ali Ahmed",
-                "skills": "Python, Scikit-Learn, Pandas, NumPy, SQL, Data Analysis, Machine Learning",
-                "description": "Develop and deploy predictive models, handle large datasets, and optimize machine learning workflows."
+                "skills": "Python, Scikit-Learn, Pandas, NumPy, SQL, Feature Engineering, Predictive Modeling",
+                "description": "Develop and deploy robust predictive models, clean and analyze large datasets, and optimize machine learning pipelines."
             },
             {
-                "id": "track_3",
-                "title": "Computer Vision Intern",
-                "company": "Ezitech Vision Lab",
+                "id": "track_nlp",
+                "title": "Natural Language Processing (NLP) Intern",
+                "company": "Ezitech Linguistics AI",
                 "mentor": "Dr. Kamran",
-                "skills": "Python, OpenCV, PyTorch, CNN, Image Processing, YOLO",
-                "description": "Build object detection, segmentation, and advanced computer vision architectures."
+                "skills": "Python, NLTK, SpaCy, Transformers, HuggingFace, Text Preprocessing, Sentiment Analysis",
+                "description": "Build text classification, named entity recognition, and advanced linguistic processing systems using modern NLP techniques."
             },
             {
-                "id": "track_4",
-                "title": "Web & Full Stack AI Developer",
-                "company": "Ezitech Solutions",
-                "mentor": "Sara Khan",
-                "skills": "Python, FastAPI, Streamlit, Docker, MySQL, REST APIs, Git",
-                "description": "Build robust web architectures, integrate AI models into production endpoints, and manage cloud deployment."
+                "id": "track_cv",
+                "title": "Computer Vision (CV) Intern",
+                "company": "Ezitech Vision Lab",
+                "mentor": "Sarah Khan",
+                "skills": "Python, OpenCV, PyTorch, CNN, Image Segmentation, YOLO, Video Analytics",
+                "description": "Build object detection, real-time video analytics, image segmentation, and advanced computer vision architectures."
+            },
+            {
+                "id": "track_llm",
+                "title": "Generative AI & LLM Intern",
+                "company": "Ezitech GenAI Hub",
+                "mentor": "Dr. Hamera Javed",
+                "skills": "Python, LangChain, LlamaIndex, Ollama, Vector Databases, ChromaDB, RAG, Streamlit",
+                "description": "Build local LLM interfaces, Retrieval-Augmented Generation (RAG) pipelines, and generative applications using state-of-the-art frameworks."
+            },
+            {
+                "id": "track_web",
+                "title": "Web Development & Frontend AI Intern",
+                "company": "Ezitech Web Solutions",
+                "mentor": "Usman Malik",
+                "skills": "HTML, CSS, JavaScript, React, Tailwind CSS, UI/UX Design, Streamlit, REST APIs",
+                "description": "Create responsive, interactive web applications and integrate AI-powered dashboards for seamless user experiences."
+            },
+            {
+                "id": "track_backend",
+                "title": "Backend & API Development Intern",
+                "company": "Ezitech Core Systems",
+                "mentor": "Bilal Ahmed",
+                "skills": "Python, FastAPI, Flask, Node.js, Express, MySQL, PostgreSQL, RESTful APIs, JWT Auth",
+                "description": "Build secure backend servers, manage relational databases, design scalable REST APIs, and handle authentication workflows."
+            },
+            {
+                "id": "track_ds",
+                "title": "Data Science & Big Data Intern",
+                "company": "Ezitech Data Corp",
+                "mentor": "Ayesha Siddiqui",
+                "skills": "Python, R, Pandas, Tableau, PowerBI, Big Data, Statistical Analysis, Data Visualization",
+                "description": "Extract actionable insights from complex datasets, build executive dashboards, and perform deep statistical evaluations."
+            },
+            {
+                "id": "track_cloud",
+                "title": "Cloud Computing Intern",
+                "company": "Ezitech Cloud Infrastructure",
+                "mentor": "Zainab Tariq",
+                "skills": "AWS, Docker, Kubernetes, Linux, Cloud Architecture, Serverless, Terraform",
+                "description": "Deploy, scale, and manage cloud-native applications across modern cloud environments with automated provisioning."
+            },
+            {
+                "id": "track_devops",
+                "title": "DevOps & Automation Intern",
+                "company": "Ezitech DevOps Studio",
+                "mentor": "Fahad Mustafa",
+                "skills": "Docker, Kubernetes, GitHub Actions, CI/CD Pipelines, Linux Shell Scripting, Monitoring, Ansible",
+                "description": "Implement automated CI/CD deployment pipelines, containerize applications, and maintain robust infrastructure monitoring."
             }
         ]
         
@@ -186,7 +235,6 @@ def fetch_github_profile_analysis(url):
 
 def evaluate_portfolio(portfolio_url, github_repos_count):
     if not portfolio_url:
-        # Fallback evaluation based on GitHub presence
         projects_count = max(3, github_repos_count if github_repos_count > 0 else 4)
         ai_projects = max(2, projects_count // 2)
         certificates_count = 3
@@ -201,7 +249,6 @@ def evaluate_portfolio(portfolio_url, github_repos_count):
             "rating": rating
         }
     
-    # Analyze provided Portfolio / GitHub Pages URL
     try:
         resp = requests.get(portfolio_url.strip(), timeout=4)
         page_text = resp.text.lower() if resp.status_code == 200 else ""
@@ -265,7 +312,7 @@ def run_vector_semantic_search(query_text):
     query_embedding = embed_model.encode(query_text).tolist()
     search_results = vector_collection.query(
         query_embeddings=[query_embedding],
-        n_results=2
+        n_results=3  # Top 3 matching tracks from 10 options
     )
     return search_results
 
@@ -464,15 +511,15 @@ else:
     # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Here is an overview of your internship application, vector recommendation, and final phase status.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, vector recommendation across 10 specialized tracks, and final phase status.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.markdown("<div class='metric'><p>Resume Status</p><h2>Verified</h2></div>", unsafe_allow_html=True)
         with c2:
-            st.markdown("<div class='metric'><p>Recommended Track</p><h2>GenAI / LLMs</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Available Tracks</p><h2>10 Domains</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown("<div class='metric'><p>Mentor Assigned</p><h2>Dr. Hamera Javed</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Assigned Mentor</p><h2>Dr. Hamera Javed</h2></div>", unsafe_allow_html=True)
         with c4:
             user_sub_status = "Pending"
             for sub in st.session_state.submissions:
@@ -492,16 +539,16 @@ else:
 
         with tab_dash:
             st.markdown("<div class='section-title'>Student Activity Hub</div>", unsafe_allow_html=True)
-            st.info("Monitor your overall progress across modules, execute semantic matching, and complete final phase requirements.")
+            st.info("Monitor your overall progress across 10 specialized internship tracks, execute vector semantic matching, and complete final phase requirements.")
 
         with tab_rec:
-            st.markdown("<div class='section-title'>AI Matching, Resume Score, GitHub API, Portfolio Evaluation & Skill Gap</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>AI Matching across 10 Tracks, Resume Score, GitHub API, Portfolio & Skill Gap</div>", unsafe_allow_html=True)
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
                 st.markdown("### Candidate Profile Submission")
                 with st.form("profile_form"):
-                    skills_input = st.text_input("Technical Skills", placeholder="Python, TensorFlow, LangChain...")
+                    skills_input = st.text_input("Technical Skills", placeholder="Python, PyTorch, LangChain, FastAPI, Docker...")
                     resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
                     github_url = st.text_input("GitHub Profile URL", placeholder="https://github.com/username")
                     portfolio_url = st.text_input("Portfolio / GitHub Pages URL", placeholder="https://username.github.io")
@@ -509,7 +556,7 @@ else:
                     analyze = st.form_submit_button("Run Complete Enterprise Evaluation")
 
             with right:
-                st.markdown("### Comprehensive Evaluation, GitHub, Portfolio & Gap Results")
+                st.markdown("### Comprehensive Evaluation & 10-Track Vector Matching")
                 if analyze:
                     if not skills_input and not resume_file and not github_url and not portfolio_url:
                         st.warning("⚠️ Please provide at least technical skills, resume PDF, GitHub URL, or portfolio link.")
@@ -531,12 +578,12 @@ else:
                             time.sleep(0.3)
                             scores = evaluate_resume_metrics(resume_text, skills_input)
                         
-                        with st.spinner("Step 5/5: Running ChromaDB Vector Search & Skill Gap Analysis..."):
+                        with st.spinner("Step 5/5: Running ChromaDB Vector Search across 10 Tracks & Skill Gap Analysis..."):
                             time.sleep(0.3)
                             fused_profile_data = f"Manual Skills: {skills_input} | Resume Context: {resume_text[:1200]}"
                             search_results = run_vector_semantic_search(fused_profile_data)
                         
-                        st.success("✅ **Enterprise Evaluation & Portfolio Analysis Completed!**")
+                        st.success("✅ **Enterprise Evaluation & 10-Track Vector Matching Completed!**")
                         
                         # Resume Score Card
                         st.markdown(f"""
@@ -583,11 +630,17 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Skill Gap Analysis Professional Card
-                        target_track_skills = "Python, TensorFlow, Docker, AWS, LangChain, LLMs, Streamlit"
-                        gap_checks = perform_skill_gap_analysis(skills_input + " " + resume_text, target_track_skills)
+                        # Skill Gap Analysis Professional Card (Using top matched track)
+                        top_req_skills = "Python, LangChain, LlamaIndex, Ollama, Vector Databases, ChromaDB, RAG, Streamlit"
+                        if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
+                            top_req_skills = search_results['metadatas'][0][0]['skills']
+                            top_track_title = search_results['metadatas'][0][0]['title']
+                        else:
+                            top_track_title = "Generative AI & LLM Intern"
+
+                        gap_checks = perform_skill_gap_analysis(skills_input + " " + resume_text, top_req_skills)
                         
-                        gap_html = "<div class='job-card' style='border-left: 6px solid #2563eb;'><h3>🔍 Professional Skill Gap Analysis</h3><p style='line-height:1.9;'><b>Target Track:</b> Generative AI Intern<br><br>"
+                        gap_html = f"<div class='job-card' style='border-left: 6px solid #2563eb;'><h3>🔍 Professional Skill Gap Analysis</h3><p style='line-height:1.9;'><b>Top Matched Track:</b> {top_track_title}<br><br>"
                         for sk, status in gap_checks:
                             icon = "✔" if status else "❌"
                             color = "#38bdf8" if status else "#f43f5e"
@@ -597,13 +650,13 @@ else:
                         st.markdown(gap_html, unsafe_allow_html=True)
                         
                         st.markdown("<br>", unsafe_allow_html=True)
-                        st.markdown("### Recommended Track Match")
+                        st.markdown("### Top 3 Vector-Matched Internship Tracks (from 10 Domains)")
                         
                         if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
                             for i in range(len(search_results['metadatas'][0])):
                                 meta = search_results['metadatas'][0][i]
                                 distance = search_results['distances'][0][i] if 'distances' in search_results else 0.15
-                                match_score = max(80, int(100 - (distance * 45)))
+                                match_score = max(80, int(100 - (distance * 40)))
                                 
                                 st.markdown(f"""
                                 <div class='job-card'>
@@ -613,16 +666,17 @@ else:
                                 <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
                                 <b>Assigned Mentor:</b> {meta['mentor']}<br>
                                 <b>Required Stack:</b> {meta['skills']}<br>
+                                <b>Description:</b> {meta.get('description', '')}
                                 </p>
                                 </div>
                                 """, unsafe_allow_html=True)
                 else:
-                    st.info("💡 **Submit candidate profile details on the left panel to execute Resume Score, Live GitHub API, Portfolio Evaluation, and Skill Gap Analysis.**")
+                    st.info("💡 **Submit candidate profile details on the left panel to execute Resume Score, Live GitHub API, Portfolio Evaluation, Skill Gap, and 10-Track Vector Matching.**")
 
         with tab_roadmap:
             st.markdown("<div class='section-title'>Learning & Internship Roadmap</div>", unsafe_allow_html=True)
             st.success("✅ **Phase 1:** Core Foundations & Environment Setup (Completed)")
-            st.success("✅ **Phase 2:** RAG Pipelines, Fine-Tuning & Multi-Role Integration (Completed)")
+            st.success("✅ **Phase 2:** Advanced Pipelines, 10-Track Specialization & Multi-Role Integration (Completed)")
             st.info("🔄 **Phase 3:** Final Cloud Deployment, System Evaluation & Capstone Presentation (Active)")
 
         with tab_phase3:
@@ -648,7 +702,7 @@ else:
                         if not existing:
                             st.session_state.submissions.append({
                                 "student_name": st.session_state.user_name,
-                                "track": "Generative AI Intern",
+                                "track": "Generative AI & LLM Intern",
                                 "repo": final_repo,
                                 "live_url": live_url,
                                 "notes": project_notes,
@@ -682,7 +736,7 @@ else:
     # ---------------------------------------------------
     elif st.session_state.user_role == "Mentor":
         st.markdown(f"<div class='main-title'>👨‍🏫 Mentor Portal Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Review assigned student capstone submissions, evaluate code, accept/reject, and provide feedback.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Review assigned student capstone submissions across all domains, evaluate code, accept/reject, and provide feedback.</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='section-title'>Assigned Students & Capstone Submissions</div>", unsafe_allow_html=True)
 
@@ -724,54 +778,48 @@ else:
     # ---------------------------------------------------
     elif st.session_state.user_role == "Admin":
         st.markdown(f"<div class='main-title'>🛠️ Admin Intelligence Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, domain distributions, and vector tracking metrics.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, 10-track distribution, and vector tracking metrics.</div>", unsafe_allow_html=True)
         
         st.markdown("<div class='section-title'>System Analytics Overview</div>", unsafe_allow_html=True)
         
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.markdown("<div class='metric'><p>Total Students</p><h2>42</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Total Students</p><h2>48</h2></div>", unsafe_allow_html=True)
         with c2:
-            st.markdown("<div class='metric'><p>AI Tracks (GenAI)</p><h2>14</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Total Internship Tracks</p><h2>10 Domains</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown("<div class='metric'><p>ML Tracks</p><h2>12</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Active Mentors</p><h2>5</h2></div>", unsafe_allow_html=True)
         with c4:
-            st.markdown("<div class='metric'><p>Computer Vision (CV)</p><h2>8</h2></div>", unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        c5, c6, c7, c8 = st.columns(4)
-        with c5:
-            st.markdown("<div class='metric'><p>Web & Full Stack</p><h2>8</h2></div>", unsafe_allow_html=True)
-        with c6:
-            st.markdown("<div class='metric'><p>Total Recommendations</p><h2>128</h2></div>", unsafe_allow_html=True)
-        with c7:
-            st.markdown("<div class='metric'><p>Active Mentors</p><h2>3</h2></div>", unsafe_allow_html=True)
-        with c8:
             approved_total = sum(1 for s in st.session_state.submissions if s['status'] == 'Approved')
             st.markdown(f"<div class='metric'><p>Approved Capstones</p><h2>{approved_total}</h2></div>", unsafe_allow_html=True)
 
         st.markdown("<br><br>", unsafe_allow_html=True)
 
-        st.markdown("<div class='section-title'>Domain Enrollment & Performance Visualizer</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>10-Track Domain Distribution & Performance Visualizer</div>", unsafe_allow_html=True)
         
         chart_col1, chart_col2 = st.columns(2, gap="large")
         
         with chart_col1:
-            st.markdown("### 📊 Domain Distribution (Student Count)")
+            st.markdown("### 📊 10-Track Enrollment Count")
             domain_data = {
-                "Generative AI": 14,
-                "Machine Learning": 12,
-                "Computer Vision": 8,
-                "Web & Full Stack": 8
+                "AI": 8,
+                "ML": 9,
+                "NLP": 6,
+                "CV": 6,
+                "LLM": 10,
+                "Web": 5,
+                "Backend": 7,
+                "Data Science": 8,
+                "Cloud": 4,
+                "DevOps": 5
             }
             st.bar_chart(domain_data)
             
         with chart_col2:
             st.markdown("### 📈 Vector Matching Activity Trend")
             activity_trend = {
-                "Phase 1 Setup": 42,
-                "Phase 2 RAG": 38,
+                "Phase 1 Setup": 48,
+                "Phase 2 10-Track RAG": 44,
                 "Phase 3 Capstone": len(st.session_state.submissions)
             }
             st.bar_chart(activity_trend)
