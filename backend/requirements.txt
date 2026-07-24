@@ -2,5 +2,8 @@ streamlit
 sentence-transformers
 chromadb
 numpy
+requests
+langdetect
+googletrans==4.0.0-rc1
 PyMuPDF
-torch
+reportlab
