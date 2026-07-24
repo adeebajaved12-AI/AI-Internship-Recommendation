@@ -4,6 +4,10 @@ import os
 from sentence_transformers import SentenceTransformer
 import chromadb
 import numpy as np
+from auth import init_db, register_user, authenticate_user
+
+# Initialize SQLite database for users
+init_db()
 
 # Safe import for PDF parsing (PyMuPDF / fitz)
 try:
@@ -21,6 +25,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# Session state initialization for Authentication
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_role" not in st.session_state:
+    st.session_state.user_role = None
+if "user_name" not in st.session_state:
+    st.session_state.user_name = ""
 
 # ---------------------------------------------------
 # 1. AI Models & Vector DB Initialization (Cached)
@@ -121,7 +133,7 @@ def run_vector_semantic_search(query_text):
     return search_results
 
 # ---------------------------------------------------
-# Professional CSS Styling (Bold Fonts & High Contrast Dark Blue/Black/White Theme)
+# Professional CSS Styling
 # ---------------------------------------------------
 st.markdown("""
 <style>
@@ -137,7 +149,6 @@ html, body, [class*="css"] {
 footer {visibility: hidden;} 
 header {visibility: hidden;}
 
-/* Branding Header */
 .brand-logo {
     font-size: 22px;
     font-weight: 900;
@@ -172,7 +183,6 @@ header {visibility: hidden;}
     padding-left: 10px;
 }
 
-/* Form Inputs & Labels */
 label {
     font-weight: 700 !important;
     color: #e2e8f0 !important;
@@ -194,7 +204,6 @@ label {
     background-color: #0f172a;
 }
 
-/* Bold Action Button */
 .stButton>button {
     width: 100%; 
     padding: 15px; 
@@ -213,7 +222,6 @@ label {
     transform: translateY(-2px);
 }
 
-/* Stats Badges */
 .stats-container {
     display: flex;
     gap: 15px;
@@ -241,7 +249,6 @@ label {
     letter-spacing: 0.5px;
 }
 
-/* Track / Job Card */
 .job-card {
     background: #0f172a; 
     border-left: 6px solid #2563eb;
@@ -254,19 +261,6 @@ label {
     border-bottom: 1px solid #1e293b;
 }
 
-.job-card h3 {
-    color: #ffffff;
-    font-weight: 900;
-    font-size: 22px;
-}
-
-.job-card p {
-    color: #e2e8f0;
-    font-weight: 600;
-    font-size: 15px;
-}
-
-/* Metrics Display */
 .metric {
     background: #0f172a; 
     border-radius: 12px; 
@@ -291,114 +285,175 @@ label {
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------
-# Header Section
+# AUTHENTICATION SCREEN
 # ---------------------------------------------------
-st.markdown("<div class='brand-logo'>EZITECH PORTAL</div>", unsafe_allow_html=True)
-st.markdown("<div class='main-title'>AI Internship Recommendation System</div>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>Intelligent candidate matching engine designed for automated internship & mentor allocation.</div>", unsafe_allow_html=True)
-
-st.markdown("""
-<div class='stats-container'>
-    <div class='stat-box'>
-        <h3>25k+</h3>
-        <p>TOTAL INTERNS</p>
-    </div>
-    <div class='stat-box'>
-        <h3>500+</h3>
-        <p>ACTIVE INTERNSHIPS</p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-left, right = st.columns([1, 1.2], gap="large")
-
-# ---------------------------------------------------
-# LEFT COLUMN: Input Form
-# ---------------------------------------------------
-with left:
-    st.markdown("<div class='section-title'>Candidate Profile Submission</div>", unsafe_allow_html=True)
+if not st.session_state.logged_in:
+    st.markdown("<div class='brand-logo'>EZITECH PORTAL</div>", unsafe_allow_html=True)
+    st.markdown("<div class='main-title'>🔐 Portal Authentication</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sub-title'>Secure access control for Students, Mentors, and Administrators.</div>", unsafe_allow_html=True)
     
-    with st.form("profile_form"):
-        skills_input = st.text_input(
-            "Technical Skills",
-            placeholder="Python, LangChain, Machine Learning, Streamlit..."
-        )
-        
-        resume_file = st.file_uploader(
-            "Upload Resume (PDF)",
-            type=["pdf"]
-        )
-        
-        github_url = st.text_input(
-            "GitHub Profile URL",
-            placeholder="https://github.com/username"
-        )
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        analyze = st.form_submit_button("Analyze & Match Track")
-
-# ---------------------------------------------------
-# RIGHT COLUMN: Structured Multi-Step Evaluation Dashboard
-# ---------------------------------------------------
-with right:
-    st.markdown("<div class='section-title'>AI Matching & Recommendation Engine</div>", unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 1], gap="large")
     
-    if analyze:
-        # 1. GitHub Validation Check
-        is_github_valid = validate_github_url(github_url)
+    with col1:
+        st.markdown("<div class='section-title'>Select Options</div>", unsafe_allow_html=True)
+        auth_mode = st.radio("Choose Action", ["Login", "Sign Up"], horizontal=True)
+        role = st.selectbox("Select Role", ["Student", "Mentor", "Admin"])
         
-        if not is_github_valid:
-            st.error("❌ **Invalid GitHub URL!** Please provide a valid URL starting with `https://github.com/`")
-        elif not skills_input and not resume_file:
-            st.warning("⚠️ Please provide either technical skills or upload your resume PDF to proceed.")
+    with col2:
+        if auth_mode == "Login":
+            st.markdown(f"<div class='section-title'>{role} Portal Login</div>", unsafe_allow_html=True)
+            with st.form("login_form"):
+                email = st.text_input("Email Address")
+                password = st.text_input("Password", type="password")
+                submit_login = st.form_submit_button("Login")
+                
+                if submit_login:
+                    user = authenticate_user(email, password, role)
+                    if user:
+                        st.session_state.logged_in = True
+                        st.session_state.user_role = role
+                        st.session_state.user_name = user[1]
+                        st.success(f"Welcome back, {user[1]}!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid credentials or role mismatch!")
         else:
-            # Step-by-step separated workflow execution
-            with st.spinner("Step 1/3: Parsing Candidate Resume PDF..."):
-                time.sleep(0.5)
-                resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
+            st.markdown(f"<div class='section-title'>{role} Registration</div>", unsafe_allow_html=True)
+            with st.form("signup_form"):
+                name = st.text_input("Full Name")
+                email = st.text_input("Email Address")
+                password = st.text_input("Password", type="password")
+                submit_signup = st.form_submit_button("Register")
+                
+                if submit_signup:
+                    if name and email and password:
+                        success, msg = register_user(name, email, password, role)
+                        if success:
+                            st.success(msg + " Please switch to Login tab.")
+                        else:
+                            st.error(msg)
+                    else:
+                        st.warning("Please fill all fields.")
+
+else:
+    # ---------------------------------------------------
+    # MAIN PORTAL (After Successful Authentication)
+    # ---------------------------------------------------
+    st.sidebar.markdown(f"**Logged in as:** {st.session_state.user_name}")
+    st.sidebar.markdown(f"**Role:** {st.session_state.user_role}")
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.user_role = None
+        st.session_state.user_name = ""
+        st.rerun()
+
+    st.markdown("<div class='brand-logo'>EZITECH PORTAL</div>", unsafe_allow_html=True)
+    
+    # Role-Based Routing Views
+    if st.session_state.user_role == "Student":
+        st.markdown("<div class='main-title'>AI Internship Recommendation System</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Intelligent candidate matching engine designed for automated internship & mentor allocation.</div>", unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class='stats-container'>
+            <div class='stat-box'>
+                <h3>25k+</h3>
+                <p>TOTAL INTERNS</p>
+            </div>
+            <div class='stat-box'>
+                <h3>500+</h3>
+                <p>ACTIVE INTERNSHIPS</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        left, right = st.columns([1, 1.2], gap="large")
+
+        with left:
+            st.markdown("<div class='section-title'>Candidate Profile Submission</div>", unsafe_allow_html=True)
+            with st.form("profile_form"):
+                skills_input = st.text_input(
+                    "Technical Skills",
+                    placeholder="Python, LangChain, Machine Learning, Streamlit..."
+                )
+                resume_file = st.file_uploader(
+                    "Upload Resume (PDF)",
+                    type=["pdf"]
+                )
+                github_url = st.text_input(
+                    "GitHub Profile URL",
+                    placeholder="https://github.com/username"
+                )
+                st.markdown("<br>", unsafe_allow_html=True)
+                analyze = st.form_submit_button("Analyze & Match Track")
+
+        with right:
+            st.markdown("<div class='section-title'>AI Matching & Recommendation Engine</div>", unsafe_allow_html=True)
             
-            with st.spinner("Step 2/3: Analyzing Skills & Processing Profile Context..."):
-                time.sleep(0.5)
-                fused_profile_data = analyze_and_extract_skills(resume_text, skills_input)
-            
-            with st.spinner("Step 3/3: Running ChromaDB Semantic Search & Vector Matching..."):
-                time.sleep(0.5)
-                search_results = run_vector_semantic_search(fused_profile_data)
-            
-            st.success("✅ **Enterprise Evaluation Completed Successfully!**")
-            
-            # Dashboard Metrics
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.markdown("<div class='metric'><p>Match Accuracy</p><h2>95%</h2></div>", unsafe_allow_html=True)
-            with c2:
-                st.markdown("<div class='metric'><p>Vector DB</p><h2>ChromaDB</h2></div>", unsafe_allow_html=True)
-            with c3:
-                st.markdown("<div class='metric'><p>Status</p><h2>Verified</h2></div>", unsafe_allow_html=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.progress(0.95)
-            
-            # Render Matches
-            if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
-                for i in range(len(search_results['metadatas'][0])):
-                    meta = search_results['metadatas'][0][i]
-                    distance = search_results['distances'][0][i] if 'distances' in search_results else 0.15
-                    match_score = max(80, int(100 - (distance * 45)))
+            if analyze:
+                is_github_valid = validate_github_url(github_url)
+                
+                if not is_github_valid:
+                    st.error("❌ **Invalid GitHub URL!** Please provide a valid URL starting with `https://github.com/`")
+                elif not skills_input and not resume_file:
+                    st.warning("⚠️ Please provide either technical skills or upload your resume PDF to proceed.")
+                else:
+                    with st.spinner("Step 1/3: Parsing Candidate Resume PDF..."):
+                        time.sleep(0.5)
+                        resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
                     
-                    st.markdown(f"""
-                    <div class='job-card'>
-                    <h3>{meta['title']}</h3>
-                    <p style='line-height:1.7;'>
-                    <b>Organization:</b> {meta['company']}<br>
-                    <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
-                    <b>Assigned Mentor:</b> {meta['mentor']}<br>
-                    <b>Required Stack:</b> {meta['skills']}<br>
-                    <b>AI Verification Note:</b> GitHub link validated, resume skills extracted and cross-referenced with Ezitech active cohorts successfully.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    with st.spinner("Step 2/3: Analyzing Skills & Processing Profile Context..."):
+                        time.sleep(0.5)
+                        fused_profile_data = analyze_and_extract_skills(resume_text, skills_input)
+                    
+                    with st.spinner("Step 3/3: Running ChromaDB Semantic Search & Vector Matching..."):
+                        time.sleep(0.5)
+                        search_results = run_vector_semantic_search(fused_profile_data)
+                    
+                    st.success("✅ **Enterprise Evaluation Completed Successfully!**")
+                    
+                    c1, c2, c3 = st.columns(3)
+                    with c1:
+                        st.markdown("<div class='metric'><p>Match Accuracy</p><h2>95%</h2></div>", unsafe_allow_html=True)
+                    with c2:
+                        st.markdown("<div class='metric'><p>Vector DB</p><h2>ChromaDB</h2></div>", unsafe_allow_html=True)
+                    with c3:
+                        st.markdown("<div class='metric'><p>Status</p><h2>Verified</h2></div>", unsafe_allow_html=True)
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    st.progress(0.95)
+                    
+                    if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
+                        for i in range(len(search_results['metadatas'][0])):
+                            meta = search_results['metadatas'][0][i]
+                            distance = search_results['distances'][0][i] if 'distances' in search_results else 0.15
+                            match_score = max(80, int(100 - (distance * 45)))
+                            
+                            st.markdown(f"""
+                            <div class='job-card'>
+                            <h3>{meta['title']}</h3>
+                            <p style='line-height:1.7;'>
+                            <b>Organization:</b> {meta['company']}<br>
+                            <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
+                            <b>Assigned Mentor:</b> {meta['mentor']}<br>
+                            <b>Required Stack:</b> {meta['skills']}<br>
+                            <b>AI Verification Note:</b> GitHub link validated, resume skills extracted and cross-referenced with Ezitech active cohorts successfully.
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.warning("No matching tracks found for the given criteria.")
             else:
-                st.warning("No matching tracks found for the given criteria.")
-    else:
-        st.info("💡 **Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.**")
+                st.info("💡 **Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.**")
+
+    elif st.session_state.user_role == "Mentor":
+        st.markdown("<div class='main-title'>👨‍🏫 Mentor Portal Dashboard</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Review assigned student matches and track progress.</div>", unsafe_allow_html=True)
+        st.info("Welcome Mentor! Here you can monitor candidate evaluations and track allocation records.")
+        # Add Mentor specific features here
+
+    elif st.session_state.user_role == "Admin":
+        st.markdown("<div class='main-title'>🛠️ Admin Dashboard</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Manage system configurations, user databases, and platform analytics.</div>", unsafe_allow_html=True)
+        st.success("Welcome Admin! Full system controls and user role management are active.")
+        # Add Admin specific features here
