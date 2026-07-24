@@ -26,13 +26,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Session state initialization for Authentication
+# Session state initialization for Authentication & Submissions
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
 if "user_name" not in st.session_state:
     st.session_state.user_name = ""
+
+# Shared storage for capstone submissions (for demo/session continuity)
+if "submissions" not in st.session_state:
+    st.session_state.submissions = [
+        {
+            "student_name": "adeeba",
+            "track": "Generative AI Intern",
+            "repo": "https://github.com/adeeba/capstone-project",
+            "live_url": "https://share.streamlit.io/adeeba/project",
+            "notes": "Built local LLM RAG interface with Streamlit and ChromaDB.",
+            "status": "Pending",
+            "feedback": ""
+        }
+    ]
 
 # ---------------------------------------------------
 # 1. AI Models & Vector DB Initialization (Cached)
@@ -188,7 +202,7 @@ label {
     color: #e2e8f0 !important;
 }
 
-.stTextInput input {
+.stTextInput input, .stTextArea textarea {
     border-radius: 10px; 
     border: 2px solid #2563eb; 
     background-color: #0f172a; 
@@ -206,8 +220,8 @@ label {
 
 .stButton>button {
     width: 100%; 
-    padding: 15px; 
-    font-size: 17px; 
+    padding: 12px; 
+    font-size: 16px; 
     font-weight: 800; 
     color: #ffffff; 
     border: none;
@@ -322,12 +336,13 @@ else:
 
     st.markdown("<div class='brand-logo'>EZITECH PORTAL</div>", unsafe_allow_html=True)
     
-    # Role-Based Routing Views
+    # ---------------------------------------------------
+    # STUDENT VIEW
+    # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
         st.markdown("<div class='sub-title'>Here is an overview of your internship application, vector recommendation, and final phase status.</div>", unsafe_allow_html=True)
 
-        # Overview Metrics
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             st.markdown("<div class='metric'><p>Resume Status</p><h2>Verified</h2></div>", unsafe_allow_html=True)
@@ -336,11 +351,15 @@ else:
         with c3:
             st.markdown("<div class='metric'><p>Mentor Assigned</p><h2>Dr. Hamera Javed</h2></div>", unsafe_allow_html=True)
         with c4:
-            st.markdown("<div class='metric'><p>Phase Status</p><h2>Phase 3 Active</h2></div>", unsafe_allow_html=True)
+            # Check status from submissions list
+            user_sub_status = "Pending"
+            for sub in st.session_state.submissions:
+                if sub["student_name"].lower() == st.session_state.user_name.lower():
+                    user_sub_status = sub["status"]
+            st.markdown(f"<div class='metric'><p>Project Status</p><h2>{user_sub_status}</h2></div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Detailed Tabs including Phase 3 & Deployment
         tab_dash, tab_rec, tab_roadmap, tab_phase3, tab_certs = st.tabs([
             "📊 Dashboard Overview", 
             "🔍 Match & Recommendation", 
@@ -355,24 +374,14 @@ else:
 
         with tab_rec:
             st.markdown("<div class='section-title'>AI Matching & Recommendation Engine</div>", unsafe_allow_html=True)
-            
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
                 st.markdown("### Candidate Profile Submission")
                 with st.form("profile_form"):
-                    skills_input = st.text_input(
-                        "Technical Skills",
-                        placeholder="Python, LangChain, Machine Learning, Streamlit..."
-                    )
-                    resume_file = st.file_uploader(
-                        "Upload Resume (PDF)",
-                        type=["pdf"]
-                    )
-                    github_url = st.text_input(
-                        "GitHub Profile URL",
-                        placeholder="https://github.com/username"
-                    )
+                    skills_input = st.text_input("Technical Skills", placeholder="Python, LangChain, Machine Learning, Streamlit...")
+                    resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+                    github_url = st.text_input("GitHub Profile URL", placeholder="https://github.com/username")
                     st.markdown("<br>", unsafe_allow_html=True)
                     analyze = st.form_submit_button("Analyze & Match Track")
 
@@ -380,22 +389,19 @@ else:
                 st.markdown("### Evaluation Results")
                 if analyze:
                     is_github_valid = validate_github_url(github_url)
-                    
                     if not is_github_valid:
                         st.error("❌ **Invalid GitHub URL!** Please provide a valid URL starting with `https://github.com/`")
                     elif not skills_input and not resume_file:
                         st.warning("⚠️ Please provide either technical skills or upload your resume PDF to proceed.")
                     else:
                         with st.spinner("Step 1/3: Parsing Candidate Resume PDF..."):
-                            time.sleep(0.5)
+                            time.sleep(0.3)
                             resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
-                        
                         with st.spinner("Step 2/3: Analyzing Skills & Processing Profile Context..."):
-                            time.sleep(0.5)
+                            time.sleep(0.3)
                             fused_profile_data = analyze_and_extract_skills(resume_text, skills_input)
-                        
                         with st.spinner("Step 3/3: Running ChromaDB Semantic Search & Vector Matching..."):
-                            time.sleep(0.5)
+                            time.sleep(0.3)
                             search_results = run_vector_semantic_search(fused_profile_data)
                         
                         st.success("✅ **Enterprise Evaluation Completed Successfully!**")
@@ -415,18 +421,14 @@ else:
                                 <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
                                 <b>Assigned Mentor:</b> {meta['mentor']}<br>
                                 <b>Required Stack:</b> {meta['skills']}<br>
-                                <b>AI Verification Note:</b> GitHub link validated, resume skills extracted and cross-referenced with Ezitech active cohorts successfully.
                                 </p>
                                 </div>
                                 """, unsafe_allow_html=True)
-                        else:
-                            st.warning("No matching tracks found for the given criteria.")
                 else:
                     st.info("💡 **Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.**")
 
         with tab_roadmap:
             st.markdown("<div class='section-title'>Learning & Internship Roadmap</div>", unsafe_allow_html=True)
-            st.write("Track your progress across the structured internship phases:")
             st.success("✅ **Phase 1:** Core Foundations & Environment Setup (Completed)")
             st.success("✅ **Phase 2:** RAG Pipelines, Fine-Tuning & Multi-Role Integration (Completed)")
             st.info("🔄 **Phase 3:** Final Cloud Deployment, System Evaluation & Capstone Presentation (Active)")
@@ -443,20 +445,105 @@ else:
                 
                 if submit_capstone:
                     if final_repo and live_url:
-                        st.success("🎉 **Capstone Submitted Successfully!** Your project has been forwarded to Dr. Hamera Javed for final evaluation and certification.")
+                        # Append or update user submission
+                        existing = False
+                        for sub in st.session_state.submissions:
+                            if sub["student_name"].lower() == st.session_state.user_name.lower():
+                                sub["repo"] = final_repo
+                                sub["live_url"] = live_url
+                                sub["notes"] = project_notes
+                                sub["status"] = "Under Review"
+                                existing = True
+                        if not existing:
+                            st.session_state.submissions.append({
+                                "student_name": st.session_state.user_name,
+                                "track": "Generative AI Intern",
+                                "repo": final_repo,
+                                "live_url": live_url,
+                                "notes": project_notes,
+                                "status": "Under Review",
+                                "feedback": ""
+                            })
+                        st.success("🎉 **Capstone Submitted Successfully!** Forwarded to Dr. Hamera Javed for evaluation.")
                     else:
                         st.warning("⚠️ Please provide both the GitHub repository and live deployment URL.")
 
         with tab_certs:
             st.markdown("<div class='section-title'>📜 Certificates & Achievements</div>", unsafe_allow_html=True)
-            st.info("Your official internship completion certificate will become downloadable here once your Phase 3 submission is approved by the mentor.")
+            # Check if approved
+            is_approved = False
+            mentor_feedback = ""
+            for sub in st.session_state.submissions:
+                if sub["student_name"].lower() == st.session_state.user_name.lower():
+                    if sub["status"] == "Approved":
+                        is_approved = True
+                        mentor_feedback = sub["feedback"]
+            
+            if is_approved:
+                st.success("🏆 **Congratulations! Your capstone project has been approved by your mentor.**")
+                st.info(f"**Mentor Comments:** {mentor_feedback}")
+                st.balloons()
+                st.button("Download Official Completion Certificate (PDF)")
+            else:
+                st.info("Your official internship completion certificate will become downloadable here once your Phase 3 submission is approved and commented on by your assigned mentor.")
 
+    # ---------------------------------------------------
+    # MENTOR VIEW
+    # ---------------------------------------------------
     elif st.session_state.user_role == "Mentor":
-        st.markdown("<div class='main-title'>👨‍🏫 Mentor Portal Dashboard</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Review student capstone deployments and approve certificates.</div>", unsafe_allow_html=True)
-        st.info("Welcome Mentor! You can review submitted Phase 3 projects and validate student final evaluations.")
+        st.markdown(f"<div class='main-title'>👨‍🏫 Mentor Portal Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Review assigned student capstone submissions, evaluate code, accept/reject, and provide feedback.</div>", unsafe_allow_html=True)
 
+        st.markdown("<div class='section-title'>Assigned Students & Capstone Submissions</div>", unsafe_allow_html=True)
+
+        if not st.session_state.submissions:
+            st.info("No student submissions found yet.")
+        else:
+            for idx, sub in enumerate(st.session_state.submissions):
+                with st.container():
+                    st.markdown(f"""
+                    <div class='job-card'>
+                    <h3>Student: {sub['student_name'].capitalize()} ({sub['track']})</h3>
+                    <p style='line-height:1.7;'>
+                    <b>GitHub Repository:</b> <a href='{sub['repo']}' target='_blank'>{sub['repo']}</a><br>
+                    <b>Live Deployment:</b> <a href='{sub['live_url']}' target='_blank'>{sub['live_url']}</a><br>
+                    <b>Summary Notes:</b> {sub['notes']}<br>
+                    <b>Current Status:</b> <span style='color:#38bdf8; font-weight:900;'>{sub['status']}</span><br>
+                    <b>Existing Feedback:</b> {sub['feedback'] if sub['feedback'] else 'None provided yet.'}
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Evaluation Form for each submission
+                    with st.form(f"eval_form_{idx}"):
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            action = st.selectbox("Action", ["Pending", "Approved", "Rejected"], index=["Pending", "Approved", "Rejected"].index(sub['status']))
+                        with col_b:
+                            feedback_input = st.text_input("Mentor Comments & Feedback", value=sub['feedback'])
+                        
+                        update_btn = st.form_submit_button("Submit Evaluation & Feedback")
+                        
+                        if update_btn:
+                            sub['status'] = action
+                            sub['feedback'] = feedback_input
+                            st.success(f"Successfully updated evaluation for {sub['student_name']}!")
+                            st.rerun()
+
+    # ---------------------------------------------------
+    # ADMIN VIEW
+    # ---------------------------------------------------
     elif st.session_state.user_role == "Admin":
         st.markdown("<div class='main-title'>🛠️ Admin Dashboard</div>", unsafe_allow_html=True)
         st.markdown("<div class='sub-title'>Manage system configurations, user databases, and platform analytics.</div>", unsafe_allow_html=True)
         st.success("Welcome Admin! Full system controls and database overview are active.")
+        
+        st.markdown("<div class='section-title'>Platform Overview Metrics</div>", unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown("<div class='metric'><p>Total Submissions</p><h2>" + str(len(st.session_state.submissions)) + "</h2></div>", unsafe_allow_html=True)
+        with c2:
+            approved_count = sum(1 for s in st.session_state.submissions if s['status'] == 'Approved')
+            st.markdown(f"<div class='metric'><p>Approved Projects</p><h2>{approved_count}</h2></div>", unsafe_allow_html=True)
+        with c3:
+            st.markdown("<div class='metric'><p>Active Mentors</p><h2>1 (Dr. Hamera)</h2></div>", unsafe_allow_html=True)
