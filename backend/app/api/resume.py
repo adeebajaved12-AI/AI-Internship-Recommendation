@@ -1,67 +1,180 @@
 import os
-import re
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+import shutil
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.database.connection import get_db
 from app.models.student import StudentProfile
-from app.services.parser import extract_text_from_pdf, extract_skills
 
-router = APIRouter()
+from app.services.parser import parse_resume
+from app.services.vector_store import add_candidate_to_vector_db
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+router = APIRouter(
+    prefix="/resume",
+    tags=["Resume"]
+)
 
-@router.post("/upload-resume")
+UPLOAD_FOLDER = "uploads"
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+@router.post("/upload")
 async def upload_resume(
-    student_id: int, 
-    file: UploadFile = File(...), 
-    db: Session = Depends(get_db)
+
+        student_id: int = Form(...),
+
+        file: UploadFile = File(...),
+
+        db: Session = Depends(get_db)
+
 ):
+
+    # ------------------------
+    # PDF Validation
+    # ------------------------
+
     if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF resumes are supported.")
-    
-    # Save the uploaded file locally
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
-        
-    # Extract text using PyMuPDF (fitz) from parser.py
-    raw_text = extract_text_from_pdf(file_path)
-    
-    # Extract skills
-    skills_list = extract_skills(raw_text)
-    skills_str = ", ".join(skills_list) if skills_list else "python, machine learning"
-    
-    # Email extraction via regex fallback
-    email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', raw_text)
-    email = email_match.group(0) if email_match else "Not found"
-    
-    # Update or Create Student Profile in Database matching the expanded schema
-    student = db.query(StudentProfile).filter(StudentProfile.id == student_id).first()
-    if not student:
-        student = StudentProfile(
-            id=student_id, 
-            name="Student", 
-            email=email, 
-            skills=skills_str,
-            resume_path=file_path
+
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF Resume Allowed."
         )
+
+    # ------------------------
+    # Save PDF
+    # ------------------------
+
+    pdf_path = os.path.join(
+        UPLOAD_FOLDER,
+        f"{student_id}_{file.filename}"
+    )
+
+    with open(pdf_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # ------------------------
+    # Parse Resume
+    # ------------------------
+
+    parsed = parse_resume(pdf_path)
+
+    # ------------------------
+    # Skills
+    # ------------------------
+
+    skills = ", ".join(parsed["skills"])
+
+    # ------------------------
+    # Existing Student?
+    # ------------------------
+
+    student = db.query(StudentProfile).filter(
+
+        StudentProfile.id == student_id
+
+    ).first()
+
+    # ------------------------
+    # Create New
+    # ------------------------
+
+    if student is None:
+
+        student = StudentProfile(
+
+            id=student_id,
+
+            name=parsed["name"],
+
+            email=parsed["email"],
+
+            phone=parsed["phone"],
+
+            github=parsed["github"],
+
+            linkedin=parsed["linkedin"],
+
+            skills=skills,
+
+            resume_path=pdf_path
+
+        )
+
         db.add(student)
+
+    # ------------------------
+    # Update Existing
+    # ------------------------
+
     else:
-        student.skills = skills_str
-        student.resume_path = file_path
-        if email != "Not found":
-            student.email = email
-            
+
+        student.name = parsed["name"]
+
+        student.email = parsed["email"]
+
+        student.phone = parsed["phone"]
+
+        student.github = parsed["github"]
+
+        student.linkedin = parsed["linkedin"]
+
+        student.skills = skills
+
+        student.resume_path = pdf_path
+
     db.commit()
+
     db.refresh(student)
-    
+
+    # ------------------------
+    # Add Candidate To ChromaDB
+    # ------------------------
+
+    add_candidate_to_vector_db(
+
+        candidate_id=str(student.id),
+
+        candidate_name=student.name,
+
+        skills=skills,
+
+        resume_text=parsed["raw_text"]
+
+    )
+
+    # ------------------------
+    # Response
+    # ------------------------
+
     return {
-        "message": "Resume uploaded and parsed successfully!",
-        "filename": file.filename,
-        "extracted_email": student.email,
-        "extracted_skills": student.skills,
-        "resume_path": student.resume_path,
-        "status": "Success"
+
+        "status": "success",
+
+        "message": "Resume Uploaded Successfully",
+
+        "candidate": {
+
+            "id": student.id,
+
+            "name": student.name,
+
+            "email": student.email,
+
+            "phone": student.phone,
+
+            "github": student.github,
+
+            "linkedin": student.linkedin,
+
+            "skills": parsed["skills"],
+
+            "education": parsed["education"],
+
+            "projects": parsed["projects"],
+
+            "certifications": parsed["certifications"]
+
+        }
+
     }
