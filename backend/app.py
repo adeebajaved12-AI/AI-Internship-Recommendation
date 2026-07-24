@@ -81,7 +81,15 @@ def load_ai_engine():
             },
             {
                 "id": "track_3",
-                "title": "Full Stack AI Developer",
+                "title": "Computer Vision Intern",
+                "company": "Ezitech Vision Lab",
+                "mentor": "Dr. Kamran",
+                "skills": "Python, OpenCV, PyTorch, CNN, Image Processing, YOLO",
+                "description": "Build object detection, segmentation, and advanced computer vision architectures."
+            },
+            {
+                "id": "track_4",
+                "title": "Web & Full Stack AI Developer",
                 "company": "Ezitech Solutions",
                 "mentor": "Sara Khan",
                 "skills": "Python, FastAPI, Streamlit, Docker, MySQL, REST APIs, Git",
@@ -111,7 +119,6 @@ embed_model, vector_collection = load_ai_engine()
 # 2. Independent Utility & Processing Functions
 # ---------------------------------------------------
 def extract_text_from_pdf(uploaded_file):
-    """Parses text content from uploaded candidate PDF resume."""
     text = ""
     if not PDF_PARSER_AVAILABLE:
         return "PDF parsing library not loaded."
@@ -124,7 +131,6 @@ def extract_text_from_pdf(uploaded_file):
     return text
 
 def validate_github_url(url):
-    """Validates if the provided URL is a legitimate GitHub profile link."""
     if not url:
         return True
     cleaned_url = url.strip().lower()
@@ -133,12 +139,10 @@ def validate_github_url(url):
     return False
 
 def analyze_and_extract_skills(resume_text, manual_skills):
-    """Separately processes and fuses manual input skills with parsed CV text."""
     processed_skills = f"Manual Skills: {manual_skills} | Resume Context: {resume_text[:1200]}"
     return processed_skills
 
 def run_vector_semantic_search(query_text):
-    """Executes vector embeddings and searches ChromaDB for best matching tracks."""
     query_embedding = embed_model.encode(query_text).tolist()
     search_results = vector_collection.query(
         query_embeddings=[query_embedding],
@@ -351,7 +355,6 @@ else:
         with c3:
             st.markdown("<div class='metric'><p>Mentor Assigned</p><h2>Dr. Hamera Javed</h2></div>", unsafe_allow_html=True)
         with c4:
-            # Check status from submissions list
             user_sub_status = "Pending"
             for sub in st.session_state.submissions:
                 if sub["student_name"].lower() == st.session_state.user_name.lower():
@@ -445,7 +448,6 @@ else:
                 
                 if submit_capstone:
                     if final_repo and live_url:
-                        # Append or update user submission
                         existing = False
                         for sub in st.session_state.submissions:
                             if sub["student_name"].lower() == st.session_state.user_name.lower():
@@ -470,7 +472,6 @@ else:
 
         with tab_certs:
             st.markdown("<div class='section-title'>📜 Certificates & Achievements</div>", unsafe_allow_html=True)
-            # Check if approved
             is_approved = False
             mentor_feedback = ""
             for sub in st.session_state.submissions:
@@ -514,7 +515,6 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # Evaluation Form for each submission
                     with st.form(f"eval_form_{idx}"):
                         col_a, col_b = st.columns(2)
                         with col_a:
@@ -531,19 +531,60 @@ else:
                             st.rerun()
 
     # ---------------------------------------------------
-    # ADMIN VIEW
+    # ADMIN VIEW (Enhanced with Full Stats & Charts)
     # ---------------------------------------------------
     elif st.session_state.user_role == "Admin":
-        st.markdown("<div class='main-title'>🛠️ Admin Dashboard</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Manage system configurations, user databases, and platform analytics.</div>", unsafe_allow_html=True)
-        st.success("Welcome Admin! Full system controls and database overview are active.")
+        st.markdown(f"<div class='main-title'>🛠️ Admin Intelligence Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, domain distributions, and vector tracking metrics.</div>", unsafe_allow_html=True)
         
-        st.markdown("<div class='section-title'>Platform Overview Metrics</div>", unsafe_allow_html=True)
-        c1, c2, c3 = st.columns(3)
+        # Row 1: Key Metrics (Total Students, AI, ML, CV, Web, Recommendations, Mentors)
+        st.markdown("<div class='section-title'>System Analytics Overview</div>", unsafe_allow_html=True)
+        
+        c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.markdown("<div class='metric'><p>Total Submissions</p><h2>" + str(len(st.session_state.submissions)) + "</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>Total Students</p><h2>42</h2></div>", unsafe_allow_html=True)
         with c2:
-            approved_count = sum(1 for s in st.session_state.submissions if s['status'] == 'Approved')
-            st.markdown(f"<div class='metric'><p>Approved Projects</p><h2>{approved_count}</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>AI Tracks (GenAI)</p><h2>14</h2></div>", unsafe_allow_html=True)
         with c3:
-            st.markdown("<div class='metric'><p>Active Mentors</p><h2>1 (Dr. Hamera)</h2></div>", unsafe_allow_html=True)
+            st.markdown("<div class='metric'><p>ML Tracks</p><h2>12</h2></div>", unsafe_allow_html=True)
+        with c4:
+            st.markdown("<div class='metric'><p>Computer Vision (CV)</p><h2>8</h2></div>", unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        c5, c6, c7, c8 = st.columns(4)
+        with c5:
+            st.markdown("<div class='metric'><p>Web & Full Stack</p><h2>8</h2></div>", unsafe_allow_html=True)
+        with c6:
+            st.markdown("<div class='metric'><p>Total Recommendations</p><h2>128</h2></div>", unsafe_allow_html=True)
+        with c7:
+            st.markdown("<div class='metric'><p>Active Mentors</p><h2>3</h2></div>", unsafe_allow_html=True)
+        with c8:
+            approved_total = sum(1 for s in st.session_state.submissions if s['status'] == 'Approved')
+            st.markdown(f"<div class='metric'><p>Approved Capstones</p><h2>{approved_total}</h2></div>", unsafe_allow_html=True)
+
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
+        # Row 2: Visual Charts & Domain Breakdown
+        st.markdown("<div class='section-title'>Domain Enrollment & Performance Visualizer</div>", unsafe_allow_html=True)
+        
+        chart_col1, chart_col2 = st.columns(2, gap="large")
+        
+        with chart_col1:
+            st.markdown("### 📊 Domain Distribution (Student Count)")
+            domain_data = {
+                "Generative AI": 14,
+                "Machine Learning": 12,
+                "Computer Vision": 8,
+                "Web & Full Stack": 8
+            }
+            st.bar_chart(domain_data)
+            
+        with chart_col2:
+            st.markdown("### 📈 Vector Matching Activity Trend")
+            activity_trend = {
+                "Phase 1 Setup": 42,
+                "Phase 2 RAG": 38,
+                "Phase 3 Capstone": len(st.session_state.submissions)
+            }
+            st.bar_chart(activity_trend)
