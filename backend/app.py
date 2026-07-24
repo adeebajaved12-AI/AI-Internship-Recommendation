@@ -49,7 +49,7 @@ if "submissions" not in st.session_state:
         }
     ]
 
-# Shared storage for Mentors Database (10 Mentors matching the 10 Tracks)
+# Shared storage for Mentors Database
 if "mentors_db" not in st.session_state:
     st.session_state.mentors_db = [
         {
@@ -184,8 +184,8 @@ def load_ai_engine():
                 "title": "Web Development & Frontend AI Intern",
                 "company": "Ezitech Web Solutions",
                 "mentor": "Usman Malik",
-                "skills": "HTML, CSS, JavaScript, React, Tailwind CSS, UI/UX Design, Streamlit, REST APIs",
-                "description": "Create responsive, interactive web applications and integrate AI-powered dashboards for seamless user experiences."
+                "skills": "HTML, CSS, JavaScript, React, Tailwind CSS, UI/UX Design, Streamlit, REST APIs, PHP, Laravel",
+                "description": "Create responsive, interactive web applications, PHP/Laravel backends, and integrate AI-powered dashboards for seamless user experiences."
             },
             {
                 "id": "track_backend",
@@ -253,6 +253,33 @@ def extract_text_from_pdf(uploaded_file):
     except Exception as e:
         print(f"Error reading PDF: {e}")
     return text
+
+def classify_technology_domain(skills_text):
+    text_lower = skills_text.lower()
+    
+    # Keyword mapping for classifier
+    ai_keywords = ["python", "tensorflow", "pytorch", "cnn", "yolo", "opencv", "langchain", "llm", "rag", "llama", "huggingface", "nlp", "transformers", "ai", "machine learning"]
+    web_keywords = ["php", "laravel", "html", "css", "javascript", "react", "tailwind", "ui/ux", "wordpress", "vue", "web"]
+    backend_keywords = ["fastapi", "flask", "node.js", "express", "mysql", "postgresql", "sql", "jwt", "api"]
+    cloud_keywords = ["aws", "docker", "kubernetes", "linux", "terraform", "serverless", "cloud"]
+    devops_keywords = ["ci/cd", "github actions", "ansible", "monitoring", "devops"]
+    ds_keywords = ["pandas", "numpy", "tableau", "powerbi", "r ", "statistics", "data science"]
+    
+    matches = {
+        "Artificial Intelligence (AI) / ML": sum(1 for k in ai_keywords if k in text_lower),
+        "Web Development": sum(1 for k in web_keywords if k in text_lower),
+        "Backend Engineering": sum(1 for k in backend_keywords if k in text_lower),
+        "Cloud Computing": sum(1 for k in cloud_keywords if k in text_lower),
+        "DevOps & Automation": sum(1 for k in devops_keywords if k in text_lower),
+        "Data Science": sum(1 for k in ds_keywords if k in text_lower)
+    }
+    
+    best_domain = max(matches, key=matches.get)
+    highest_score = matches[best_domain]
+    
+    if highest_score == 0:
+        return "General Software Engineering / Multi-Domain"
+    return best_domain
 
 def fetch_github_profile_analysis(url):
     if not url:
@@ -327,7 +354,7 @@ def evaluate_portfolio(portfolio_url, github_repos_count):
         resp = requests.get(portfolio_url.strip(), timeout=4)
         page_text = resp.text.lower() if resp.status_code == 200 else ""
         
-        has_ai_keywords = any(k in page_text for k in ["llm", "rag", "pytorch", "tensorflow", "transformer", "streamlit", "opencv", "ai", "machine learning"])
+        has_ai_keywords = any(k in page_text for k in ["llm", "rag", "pytorch", "tensorflow", "transformer", "streamlit", "opencv", "ai", "machine learning", "laravel", "php"])
         projects_count = max(4, page_text.count("project") // 2 if page_text.count("project") > 0 else 5)
         ai_projects = max(2, projects_count - 2 if has_ai_keywords else 2)
         certificates_count = max(2, page_text.count("certificate") if page_text.count("certificate") > 0 else 3)
@@ -355,7 +382,7 @@ def evaluate_portfolio(portfolio_url, github_repos_count):
 
 def evaluate_resume_metrics(resume_text, manual_skills):
     text_length = len(resume_text)
-    has_skills = len(manual_skills) > 3 or "python" in resume_text.lower()
+    has_skills = len(manual_skills) > 3 or "python" in resume_text.lower() or "php" in resume_text.lower()
     
     ats_score = min(95, max(75, 70 + (text_length // 40) + (10 if has_skills else 0)))
     grammar_score = 92
@@ -585,7 +612,7 @@ else:
     # ---------------------------------------------------
     if st.session_state.user_role == "Student":
         st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Here is an overview of your internship application, vector recommendation across 10 specialized tracks, and mentor connectivity.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, automated technology classification, and vector track recommendations.</div>", unsafe_allow_html=True)
 
         c1, c2, c3, c4 = st.columns(4)
         with c1:
@@ -605,7 +632,7 @@ else:
 
         tab_dash, tab_rec, tab_mentors, tab_roadmap, tab_phase3, tab_certs = st.tabs([
             "📊 Dashboard Overview", 
-            "🔍 Match, GitHub, Portfolio & Gap", 
+            "🔍 Match, Classifier & Gap", 
             "👨‍🏫 Mentor Database",
             "🗺️ Roadmap", 
             "🚀 Phase 3: Final Deployment", 
@@ -617,13 +644,13 @@ else:
             st.info("Monitor your overall progress across 10 specialized internship tracks, consult expert mentors, and complete final phase requirements.")
 
         with tab_rec:
-            st.markdown("<div class='section-title'>AI Matching across 10 Tracks, Resume Score, GitHub API, Portfolio & Skill Gap</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>Automated Technology Classifier, Resume Score, GitHub API & Vector Matching</div>", unsafe_allow_html=True)
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
                 st.markdown("### Candidate Profile Submission")
                 with st.form("profile_form"):
-                    skills_input = st.text_input("Technical Skills", placeholder="Python, PyTorch, LangChain, FastAPI, Docker...")
+                    skills_input = st.text_input("Technical Skills", placeholder="Python, TensorFlow, CNN or PHP, Laravel...")
                     resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
                     github_url = st.text_input("GitHub Profile URL", placeholder="https://github.com/username")
                     portfolio_url = st.text_input("Portfolio / GitHub Pages URL", placeholder="https://username.github.io")
@@ -631,34 +658,51 @@ else:
                     analyze = st.form_submit_button("Run Complete Enterprise Evaluation")
 
             with right:
-                st.markdown("### Comprehensive Evaluation & 10-Track Vector Matching")
+                st.markdown("### Evaluation & Automated Technology Classifier")
                 if analyze:
                     if not skills_input and not resume_file and not github_url and not portfolio_url:
                         st.warning("⚠️ Please provide at least technical skills, resume PDF, GitHub URL, or portfolio link.")
                     else:
-                        with st.spinner("Step 1/5: Parsing Candidate Resume PDF..."):
+                        with st.spinner("Step 1/6: Parsing Candidate Resume PDF..."):
                             time.sleep(0.3)
                             resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
                         
-                        with st.spinner("Step 2/5: Querying Live GitHub API (Followers, Repos, Commits)..."):
+                        with st.spinner("Step 2/6: Running Automated Technology Classifier..."):
+                            time.sleep(0.3)
+                            combined_text_for_classifier = skills_input + " " + resume_text
+                            detected_domain = classify_technology_domain(combined_text_for_classifier)
+                        
+                        with st.spinner("Step 3/6: Querying Live GitHub API (Followers, Repos, Commits)..."):
                             time.sleep(0.3)
                             github_analysis = fetch_github_profile_analysis(github_url) if github_url else None
                         
-                        with st.spinner("Step 3/5: Evaluating Portfolio / GitHub Pages (Projects, AI, Blogs)..."):
+                        with st.spinner("Step 4/6: Evaluating Portfolio / GitHub Pages..."):
                             time.sleep(0.3)
                             repo_count_val = github_analysis.get("repositories", 5) if github_analysis and "repositories" in github_analysis else 5
                             portfolio_eval = evaluate_portfolio(portfolio_url, repo_count_val)
                         
-                        with st.spinner("Step 4/5: Evaluating ATS Compatibility & Resume Quality..."):
+                        with st.spinner("Step 5/6: Evaluating ATS Compatibility & Resume Quality..."):
                             time.sleep(0.3)
                             scores = evaluate_resume_metrics(resume_text, skills_input)
                         
-                        with st.spinner("Step 5/5: Running ChromaDB Vector Search across 10 Tracks & Skill Gap Analysis..."):
+                        with st.spinner("Step 6/6: Running ChromaDB Vector Search across 10 Tracks & Skill Gap Analysis..."):
                             time.sleep(0.3)
-                            fused_profile_data = f"Manual Skills: {skills_input} | Resume Context: {resume_text[:1200]}"
+                            fused_profile_data = f"Detected Domain: {detected_domain} | Manual Skills: {skills_input} | Resume Context: {resume_text[:1200]}"
                             search_results = run_vector_semantic_search(fused_profile_data)
                         
-                        st.success("✅ **Enterprise Evaluation & 10-Track Vector Matching Completed!**")
+                        st.success("✅ **Enterprise Evaluation & Technology Classification Completed!**")
+                        
+                        # Technology Classifier Card
+                        st.markdown(f"""
+                        <div class='job-card' style='border-left: 6px solid #f59e0b;'>
+                        <h3 style='color: #f59e0b; margin-top:0;'>⚙️ Automated Technology Classifier</h3>
+                        <p style='line-height:1.8;'>
+                        <b>Input Skills:</b> {skills_input if skills_input else 'Extracted via Resume'}<br>
+                        <b>Classification Result:</b> <span style='color:#38bdf8; font-weight:900;'>{detected_domain}</span><br>
+                        <b>System Status:</b> Successfully mapped technology stack to domain track.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
                         # Resume Score Card
                         st.markdown(f"""
@@ -705,7 +749,7 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Skill Gap Analysis Professional Card
+                        # Skill Gap Analysis Card
                         top_req_skills = "Python, LangChain, LlamaIndex, Ollama, Vector Databases, ChromaDB, RAG, Streamlit"
                         if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
                             top_req_skills = search_results['metadatas'][0][0]['skills']
@@ -746,7 +790,7 @@ else:
                                 </div>
                                 """, unsafe_allow_html=True)
                 else:
-                    st.info("💡 **Submit candidate profile details on the left panel to execute Resume Score, Live GitHub API, Portfolio Evaluation, Skill Gap, and 10-Track Vector Matching.**")
+                    st.info("💡 **Submit candidate profile details on the left panel to run Technology Classification, Resume Score, GitHub API, Portfolio Evaluation, and Vector Matching.**")
 
         with tab_mentors:
             st.markdown("<div class='section-title'>👨‍🏫 Expert Mentor Directory (10 Industry Specialists)</div>", unsafe_allow_html=True)
@@ -871,7 +915,6 @@ else:
         with tab_m_dir:
             st.markdown("<div class='section-title'>Manage Your Mentor Profile & Schedule</div>", unsafe_allow_html=True)
             
-            # Find current mentor record
             current_m_data = next((m for m in st.session_state.mentors_db if m["mentor_name"].lower() == st.session_state.user_name.lower() or m["mentor_name"].split()[1].lower() in st.session_state.user_name.lower()), st.session_state.mentors_db[0])
             
             with st.form("mentor_profile_update"):
@@ -893,7 +936,7 @@ else:
     # ---------------------------------------------------
     elif st.session_state.user_role == "Admin":
         st.markdown(f"<div class='main-title'>🛠️ Admin Intelligence Dashboard ({st.session_state.user_name})</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, 10-track distribution, and Mentor Database management.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Comprehensive overview of platform demographics, technology classifier metrics, and Mentor Database management.</div>", unsafe_allow_html=True)
         
         st.markdown("<div class='section-title'>System Analytics Overview</div>", unsafe_allow_html=True)
         
