@@ -112,7 +112,7 @@ def extract_text_from_pdf(uploaded_file):
 def validate_github_url(url):
     """Validates if the provided URL is a legitimate GitHub profile link."""
     if not url:
-        return True  # Optional field handling
+        return True
     cleaned_url = url.strip().lower()
     if cleaned_url.startswith("https://github.com/") and len(cleaned_url) > 19:
         return True
@@ -222,33 +222,6 @@ label {
     transform: translateY(-2px);
 }
 
-.stats-container {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-.stat-box {
-    background: #0f172a;
-    border: 2px solid #1e293b;
-    padding: 15px 22px;
-    border-radius: 12px;
-    text-align: left;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-.stat-box h3 {
-    color: #38bdf8;
-    margin: 0;
-    font-size: 24px;
-    font-weight: 900;
-}
-.stat-box p {
-    color: #94a3b8;
-    margin: 0;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-}
-
 .job-card {
     background: #0f172a; 
     border-left: 6px solid #2563eb;
@@ -351,109 +324,139 @@ else:
     
     # Role-Based Routing Views
     if st.session_state.user_role == "Student":
-        st.markdown("<div class='main-title'>AI Internship Recommendation System</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Intelligent candidate matching engine designed for automated internship & mentor allocation.</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='main-title'>Welcome, {st.session_state.user_name}!</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Here is an overview of your internship application, vector recommendation, and final phase status.</div>", unsafe_allow_html=True)
 
-        st.markdown("""
-        <div class='stats-container'>
-            <div class='stat-box'>
-                <h3>25k+</h3>
-                <p>TOTAL INTERNS</p>
-            </div>
-            <div class='stat-box'>
-                <h3>500+</h3>
-                <p>ACTIVE INTERNSHIPS</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Overview Metrics
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.markdown("<div class='metric'><p>Resume Status</p><h2>Verified</h2></div>", unsafe_allow_html=True)
+        with c2:
+            st.markdown("<div class='metric'><p>Recommended Track</p><h2>GenAI / LLMs</h2></div>", unsafe_allow_html=True)
+        with c3:
+            st.markdown("<div class='metric'><p>Mentor Assigned</p><h2>Dr. Hamera Javed</h2></div>", unsafe_allow_html=True)
+        with c4:
+            st.markdown("<div class='metric'><p>Phase Status</p><h2>Phase 3 Active</h2></div>", unsafe_allow_html=True)
 
-        left, right = st.columns([1, 1.2], gap="large")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        with left:
-            st.markdown("<div class='section-title'>Candidate Profile Submission</div>", unsafe_allow_html=True)
-            with st.form("profile_form"):
-                skills_input = st.text_input(
-                    "Technical Skills",
-                    placeholder="Python, LangChain, Machine Learning, Streamlit..."
-                )
-                resume_file = st.file_uploader(
-                    "Upload Resume (PDF)",
-                    type=["pdf"]
-                )
-                github_url = st.text_input(
-                    "GitHub Profile URL",
-                    placeholder="https://github.com/username"
-                )
-                st.markdown("<br>", unsafe_allow_html=True)
-                analyze = st.form_submit_button("Analyze & Match Track")
+        # Detailed Tabs including Phase 3 & Deployment
+        tab_dash, tab_rec, tab_roadmap, tab_phase3, tab_certs = st.tabs([
+            "📊 Dashboard Overview", 
+            "🔍 Match & Recommendation", 
+            "🗺️ Roadmap", 
+            "🚀 Phase 3: Final Deployment", 
+            "📜 Certificates"
+        ])
 
-        with right:
+        with tab_dash:
+            st.markdown("<div class='section-title'>Student Activity Hub</div>", unsafe_allow_html=True)
+            st.info("Monitor your overall progress across modules, execute semantic matching, and complete final phase requirements.")
+
+        with tab_rec:
             st.markdown("<div class='section-title'>AI Matching & Recommendation Engine</div>", unsafe_allow_html=True)
             
-            if analyze:
-                is_github_valid = validate_github_url(github_url)
-                
-                if not is_github_valid:
-                    st.error("❌ **Invalid GitHub URL!** Please provide a valid URL starting with `https://github.com/`")
-                elif not skills_input and not resume_file:
-                    st.warning("⚠️ Please provide either technical skills or upload your resume PDF to proceed.")
-                else:
-                    with st.spinner("Step 1/3: Parsing Candidate Resume PDF..."):
-                        time.sleep(0.5)
-                        resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
-                    
-                    with st.spinner("Step 2/3: Analyzing Skills & Processing Profile Context..."):
-                        time.sleep(0.5)
-                        fused_profile_data = analyze_and_extract_skills(resume_text, skills_input)
-                    
-                    with st.spinner("Step 3/3: Running ChromaDB Semantic Search & Vector Matching..."):
-                        time.sleep(0.5)
-                        search_results = run_vector_semantic_search(fused_profile_data)
-                    
-                    st.success("✅ **Enterprise Evaluation Completed Successfully!**")
-                    
-                    c1, c2, c3 = st.columns(3)
-                    with c1:
-                        st.markdown("<div class='metric'><p>Match Accuracy</p><h2>95%</h2></div>", unsafe_allow_html=True)
-                    with c2:
-                        st.markdown("<div class='metric'><p>Vector DB</p><h2>ChromaDB</h2></div>", unsafe_allow_html=True)
-                    with c3:
-                        st.markdown("<div class='metric'><p>Status</p><h2>Verified</h2></div>", unsafe_allow_html=True)
-                    
+            left, right = st.columns([1, 1.2], gap="large")
+
+            with left:
+                st.markdown("### Candidate Profile Submission")
+                with st.form("profile_form"):
+                    skills_input = st.text_input(
+                        "Technical Skills",
+                        placeholder="Python, LangChain, Machine Learning, Streamlit..."
+                    )
+                    resume_file = st.file_uploader(
+                        "Upload Resume (PDF)",
+                        type=["pdf"]
+                    )
+                    github_url = st.text_input(
+                        "GitHub Profile URL",
+                        placeholder="https://github.com/username"
+                    )
                     st.markdown("<br>", unsafe_allow_html=True)
-                    st.progress(0.95)
+                    analyze = st.form_submit_button("Analyze & Match Track")
+
+            with right:
+                st.markdown("### Evaluation Results")
+                if analyze:
+                    is_github_valid = validate_github_url(github_url)
                     
-                    if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
-                        for i in range(len(search_results['metadatas'][0])):
-                            meta = search_results['metadatas'][0][i]
-                            distance = search_results['distances'][0][i] if 'distances' in search_results else 0.15
-                            match_score = max(80, int(100 - (distance * 45)))
-                            
-                            st.markdown(f"""
-                            <div class='job-card'>
-                            <h3>{meta['title']}</h3>
-                            <p style='line-height:1.7;'>
-                            <b>Organization:</b> {meta['company']}<br>
-                            <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
-                            <b>Assigned Mentor:</b> {meta['mentor']}<br>
-                            <b>Required Stack:</b> {meta['skills']}<br>
-                            <b>AI Verification Note:</b> GitHub link validated, resume skills extracted and cross-referenced with Ezitech active cohorts successfully.
-                            </p>
-                            </div>
-                            """, unsafe_allow_html=True)
+                    if not is_github_valid:
+                        st.error("❌ **Invalid GitHub URL!** Please provide a valid URL starting with `https://github.com/`")
+                    elif not skills_input and not resume_file:
+                        st.warning("⚠️ Please provide either technical skills or upload your resume PDF to proceed.")
                     else:
-                        st.warning("No matching tracks found for the given criteria.")
-            else:
-                st.info("💡 **Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.**")
+                        with st.spinner("Step 1/3: Parsing Candidate Resume PDF..."):
+                            time.sleep(0.5)
+                            resume_text = extract_text_from_pdf(resume_file) if resume_file else ""
+                        
+                        with st.spinner("Step 2/3: Analyzing Skills & Processing Profile Context..."):
+                            time.sleep(0.5)
+                            fused_profile_data = analyze_and_extract_skills(resume_text, skills_input)
+                        
+                        with st.spinner("Step 3/3: Running ChromaDB Semantic Search & Vector Matching..."):
+                            time.sleep(0.5)
+                            search_results = run_vector_semantic_search(fused_profile_data)
+                        
+                        st.success("✅ **Enterprise Evaluation Completed Successfully!**")
+                        st.progress(0.95)
+                        
+                        if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
+                            for i in range(len(search_results['metadatas'][0])):
+                                meta = search_results['metadatas'][0][i]
+                                distance = search_results['distances'][0][i] if 'distances' in search_results else 0.15
+                                match_score = max(80, int(100 - (distance * 45)))
+                                
+                                st.markdown(f"""
+                                <div class='job-card'>
+                                <h3>{meta['title']}</h3>
+                                <p style='line-height:1.7;'>
+                                <b>Organization:</b> {meta['company']}<br>
+                                <b>Compatibility Match:</b> <span style='color:#38bdf8; font-weight:900;'>{match_score}%</span><br>
+                                <b>Assigned Mentor:</b> {meta['mentor']}<br>
+                                <b>Required Stack:</b> {meta['skills']}<br>
+                                <b>AI Verification Note:</b> GitHub link validated, resume skills extracted and cross-referenced with Ezitech active cohorts successfully.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                        else:
+                            st.warning("No matching tracks found for the given criteria.")
+                else:
+                    st.info("💡 **Submit candidate details on the left panel to execute separated CV parsing, skill evaluation, and vector matching.**")
+
+        with tab_roadmap:
+            st.markdown("<div class='section-title'>Learning & Internship Roadmap</div>", unsafe_allow_html=True)
+            st.write("Track your progress across the structured internship phases:")
+            st.success("✅ **Phase 1:** Core Foundations & Environment Setup (Completed)")
+            st.success("✅ **Phase 2:** RAG Pipelines, Fine-Tuning & Multi-Role Integration (Completed)")
+            st.info("🔄 **Phase 3:** Final Cloud Deployment, System Evaluation & Capstone Presentation (Active)")
+
+        with tab_phase3:
+            st.markdown("<div class='section-title'>🚀 Phase 3: Final Deployment & Evaluation Module</div>", unsafe_allow_html=True)
+            st.write("Submit your final project repository link and deployment URL for final mentor review.")
+            
+            with st.form("phase3_submission"):
+                final_repo = st.text_input("GitHub Repository URL (Capstone Project)", placeholder="https://github.com/username/project-repo")
+                live_url = st.text_input("Live Application URL (Streamlit Cloud / Render / HuggingFace)", placeholder="https://share.streamlit.io/...")
+                project_notes = st.text_area("Implementation Summary & Key Highlights", placeholder="Briefly explain the architecture and tech stack used...")
+                submit_capstone = st.form_submit_button("Submit Capstone for Final Evaluation")
+                
+                if submit_capstone:
+                    if final_repo and live_url:
+                        st.success("🎉 **Capstone Submitted Successfully!** Your project has been forwarded to Dr. Hamera Javed for final evaluation and certification.")
+                    else:
+                        st.warning("⚠️ Please provide both the GitHub repository and live deployment URL.")
+
+        with tab_certs:
+            st.markdown("<div class='section-title'>📜 Certificates & Achievements</div>", unsafe_allow_html=True)
+            st.info("Your official internship completion certificate will become downloadable here once your Phase 3 submission is approved by the mentor.")
 
     elif st.session_state.user_role == "Mentor":
         st.markdown("<div class='main-title'>👨‍🏫 Mentor Portal Dashboard</div>", unsafe_allow_html=True)
-        st.markdown("<div class='sub-title'>Review assigned student matches and track progress.</div>", unsafe_allow_html=True)
-        st.info("Welcome Mentor! Here you can monitor candidate evaluations and track allocation records.")
-        # Add Mentor specific features here
+        st.markdown("<div class='sub-title'>Review student capstone deployments and approve certificates.</div>", unsafe_allow_html=True)
+        st.info("Welcome Mentor! You can review submitted Phase 3 projects and validate student final evaluations.")
 
     elif st.session_state.user_role == "Admin":
         st.markdown("<div class='main-title'>🛠️ Admin Dashboard</div>", unsafe_allow_html=True)
         st.markdown("<div class='sub-title'>Manage system configurations, user databases, and platform analytics.</div>", unsafe_allow_html=True)
-        st.success("Welcome Admin! Full system controls and user role management are active.")
-        # Add Admin specific features here
+        st.success("Welcome Admin! Full system controls and database overview are active.")
