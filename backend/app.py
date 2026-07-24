@@ -68,7 +68,7 @@ def load_ai_engine():
                 "title": "Generative AI Intern",
                 "company": "Ezitech Portal / Arch Technologies",
                 "mentor": "Dr. Hamera Javed",
-                "skills": "Python, NLP, Deep Learning, TensorFlow, PyTorch, LangChain, LLMs, Streamlit",
+                "skills": "Python, TensorFlow, Docker, AWS, LangChain, LLMs, Streamlit",
                 "description": "Build local LLM interfaces, RAG pipelines, and generative applications using state-of-the-art frameworks."
             },
             {
@@ -139,16 +139,13 @@ def validate_github_url(url):
     return False
 
 def evaluate_resume_metrics(resume_text, manual_skills):
-    # Advanced Resume Quality & ATS Evaluator logic
     text_length = len(resume_text)
     has_skills = len(manual_skills) > 3 or "python" in resume_text.lower()
     
-    # Dynamic metric generation based on content depth
     ats_score = min(95, max(75, 70 + (text_length // 40) + (10 if has_skills else 0)))
     grammar_score = 92
     experience_score = 85 if text_length > 300 else 78
     projects_score = 90 if "github" in resume_text.lower() or has_skills else 80
-    
     overall_score = int((ats_score + grammar_score + experience_score + projects_score) / 4)
     
     return {
@@ -158,6 +155,17 @@ def evaluate_resume_metrics(resume_text, manual_skills):
         "experience": experience_score,
         "projects": projects_score
     }
+
+def perform_skill_gap_analysis(user_skills_str, required_skills_str):
+    user_skills = [s.strip().lower() for s in user_skills_str.replace(",", " ").split() if s.strip()]
+    required_skills = [s.strip() for s in required_skills_str.split(",")]
+    
+    gap_results = []
+    for req in required_skills:
+        req_clean = req.strip()
+        found = any(req_clean.lower() in us for us in user_skills)
+        gap_results.append((req_clean, found))
+    return gap_results
 
 def run_vector_semantic_search(query_text):
     query_embedding = embed_model.encode(query_text).tolist()
@@ -382,7 +390,7 @@ else:
 
         tab_dash, tab_rec, tab_roadmap, tab_phase3, tab_certs = st.tabs([
             "📊 Dashboard Overview", 
-            "🔍 Match & Recommendation", 
+            "🔍 Match, Resume & Gap Analysis", 
             "🗺️ Roadmap", 
             "🚀 Phase 3: Final Deployment", 
             "📜 Certificates"
@@ -393,20 +401,20 @@ else:
             st.info("Monitor your overall progress across modules, execute semantic matching, and complete final phase requirements.")
 
         with tab_rec:
-            st.markdown("<div class='section-title'>AI Matching & Resume Scoring Engine</div>", unsafe_allow_html=True)
+            st.markdown("<div class='section-title'>AI Matching, Resume Score & Skill Gap Analysis</div>", unsafe_allow_html=True)
             left, right = st.columns([1, 1.2], gap="large")
 
             with left:
                 st.markdown("### Candidate Profile Submission")
                 with st.form("profile_form"):
-                    skills_input = st.text_input("Technical Skills", placeholder="Python, LangChain, Machine Learning, Streamlit...")
+                    skills_input = st.text_input("Technical Skills", placeholder="Python, TensorFlow, LangChain...")
                     resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
                     github_url = st.text_input("GitHub Profile URL", placeholder="https://github.com/username")
                     st.markdown("<br>", unsafe_allow_html=True)
-                    analyze = st.form_submit_button("Analyze Resume & Match Track")
+                    analyze = st.form_submit_button("Analyze & Run Gap Analysis")
 
             with right:
-                st.markdown("### Evaluation Results & Resume Score")
+                st.markdown("### Comprehensive Evaluation & Skill Gap Results")
                 if analyze:
                     is_github_valid = validate_github_url(github_url)
                     if not is_github_valid:
@@ -420,29 +428,39 @@ else:
                         with st.spinner("Step 2/3: Evaluating ATS Compatibility & Resume Quality..."):
                             time.sleep(0.3)
                             scores = evaluate_resume_metrics(resume_text, skills_input)
-                        with st.spinner("Step 3/3: Running ChromaDB Semantic Search & Vector Matching..."):
+                        with st.spinner("Step 3/3: Running ChromaDB Vector Search & Skill Gap Analysis..."):
                             time.sleep(0.3)
                             fused_profile_data = f"Manual Skills: {skills_input} | Resume Context: {resume_text[:1200]}"
                             search_results = run_vector_semantic_search(fused_profile_data)
                         
-                        st.success("✅ **Enterprise Evaluation Completed Successfully!**")
+                        st.success("✅ **Enterprise Evaluation & Gap Analysis Completed!**")
                         
-                        # Display Resume Score Card Breakdown
+                        # Resume Score Card
                         st.markdown(f"""
                         <div class='job-card' style='border-left: 6px solid #38bdf8;'>
-                        <h3 style='color: #38bdf8; margin-top:0;'>📊 Comprehensive Resume Score: {scores['overall']}%</h3>
-                        <p style='line-height:1.8;'>
-                        <b>📄 Resume Quality:</b> {scores['overall']}%<br>
-                        <b>⚙️ ATS Score:</b> {scores['ats']}%<br>
-                        <b>✍️ Grammar & Formatting:</b> {scores['grammar']}%<br>
-                        <b>💼 Experience Evaluation:</b> {scores['experience']}%<br>
-                        <b>🚀 Projects & Tech Stack:</b> {scores['projects']}%<br>
+                        <h3 style='color: #38bdf8; margin-top:0;'>📊 Resume Score: {scores['overall']}%</h3>
+                        <p style='line-height:1.7;'>
+                        <b>📄 Resume Quality:</b> {scores['overall']}% | <b>⚙️ ATS Score:</b> {scores['ats']}%<br>
+                        <b>✍️ Grammar:</b> {scores['grammar']}% | <b>💼 Experience:</b> {scores['experience']}% | <b>🚀 Projects:</b> {scores['projects']}%
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
                         
+                        # Skill Gap Analysis Professional Card
+                        target_track_skills = "Python, TensorFlow, Docker, AWS, LangChain, LLMs, Streamlit"
+                        gap_checks = perform_skill_gap_analysis(skills_input + " " + resume_text, target_track_skills)
+                        
+                        gap_html = "<div class='job-card' style='border-left: 6px solid #2563eb;'><h3>🔍 Professional Skill Gap Analysis</h3><p style='line-height:1.9;'><b>Target Track:</b> Generative AI Intern<br><br>"
+                        for sk, status in gap_checks:
+                            icon = "✔" if status else "❌"
+                            color = "#38bdf8" if status else "#f43f5e"
+                            gap_html += f"<b>{sk}</b> <span style='color:{color}; font-weight:900;'>{icon}</span><br>"
+                        gap_html += "<br><b>Recommendation:</b> Focus on upskilling missing tools (marked with ❌) through recommended modules before final capstone defense.</p></div>"
+                        
+                        st.markdown(gap_html, unsafe_allow_html=True)
+                        
                         st.markdown("<br>", unsafe_allow_html=True)
-                        st.markdown("### Recommended Internship Track")
+                        st.markdown("### Recommended Track Match")
                         
                         if search_results and 'metadatas' in search_results and len(search_results['metadatas'][0]) > 0:
                             for i in range(len(search_results['metadatas'][0])):
@@ -462,7 +480,7 @@ else:
                                 </div>
                                 """, unsafe_allow_html=True)
                 else:
-                    st.info("💡 **Submit candidate details on the left panel to generate your complete ATS Resume Score and track recommendations.**")
+                    st.info("💡 **Submit candidate details on the left panel to execute your Resume Score and detailed Skill Gap Analysis.**")
 
         with tab_roadmap:
             st.markdown("<div class='section-title'>Learning & Internship Roadmap</div>", unsafe_allow_html=True)
