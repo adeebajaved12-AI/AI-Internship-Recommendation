@@ -1,7 +1,7 @@
 streamlit
 sentence-transformers
-chromadb
-numpy
+chromadb>=0.4.22
+numpy<2.0.0
 requests
 langdetect
 googletrans==4.0.0-rc1
