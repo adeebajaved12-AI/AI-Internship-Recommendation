@@ -1110,3 +1110,14 @@ else:
                         mentor["availability"] = adm_avail
                         mentor["current_students"] = adm_students
                         st.success(f"Updated records for {adm_name}!")
+                        st.set_page_config(
+    page_title="Ezitech AI Portal",
+    page_icon="🎓",
+    layout="wide"
+)
+
+# Custom Manifest & Meta tags for mobile installation
+st.markdown("""
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+""", unsafe_allow_html=True)
