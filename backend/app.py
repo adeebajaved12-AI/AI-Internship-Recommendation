@@ -7,6 +7,11 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 import numpy as np
 from auth import init_db, register_user, authenticate_user
+from main import (
+    add_mentor,
+    get_dynamic_mentors,
+    validate_github_profile_and_repo,
+)
 
 # Initialize SQLite database for users
 init_db()
