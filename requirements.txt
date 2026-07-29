@@ -1,2 +1,7 @@
-streamlit
 requests
+streamlit
+sentence-transformers
+chromadb
+numpy
+PyMuPDF
+torch
