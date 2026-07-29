@@ -1132,9 +1132,16 @@ st.set_page_config(
     page_title="AI Internship Engine - EEF AI-001", layout="wide"
 )
 
-st.title(" Intelligent Internship Recommendation & Matching Engine")
+st.title("🚀 Intelligent Internship Recommendation & Matching Engine")
 
-# --- SIDEBAR: DYNAMIC ADMIN PANEL (No Dummy Data) ---
+# Fetch GitHub Token securely from Streamlit Secrets (Optional for local, required if heavy usage)
+github_token = (
+    st.secrets.get("GITHUB_TOKEN")
+    if "GITHUB_TOKEN" in st.secrets
+    else None
+)
+
+# --- SIDEBAR: DYNAMIC ADMIN PANEL ---
 st.sidebar.header("🛠️ Admin & Supervisor Panel")
 st.sidebar.subheader("Add New Mentor Dynamically")
 
@@ -1151,13 +1158,13 @@ with st.sidebar.form("mentor_form"):
       st.sidebar.error("Please fill in all fields.")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Active Dynamic Mentors")
+st.sidebar.subheader("📋 Active Dynamic Mentors")
 active_mentors = get_dynamic_mentors()
 for name, exp in active_mentors:
   st.sidebar.text(f"• {name} ({exp})")
 
 
-# --- MAIN INTERFACE: CANDIDATE SUBMISSION & REAL ANALYSIS ---
+# --- MAIN INTERFACE: REAL-TIME GITHUB ANALYSIS ---
 st.markdown("### Candidate Application Portal")
 
 github_url = st.text_input("Enter your GitHub Profile or Repository URL:")
@@ -1167,35 +1174,26 @@ if st.button("Run Real-Time Analysis & Matching"):
   if not github_url:
     st.error("Please provide a GitHub link.")
   else:
-    with st.spinner("Analyzing GitHub and verifying data in real-time..."):
-      # 1. Real GitHub Validation Check
-      gh_check = validate_github_profile_and_repo(github_url)
+    with st.spinner("Analyzing GitHub via live API in real-time..."):
+      # Pass token to the validation function
+      gh_check = validate_github_profile_and_repo(
+          github_url, github_token=github_token
+      )
 
       if not gh_check["valid"]:
-        # Agar link fake ya galat hua toh yahan error throw ho jayega
-        st.error(f" Real-Analysis Error: {gh_check['error']}")
+        st.error(f"❌ Real-Analysis Error: {gh_check['error']}")
       else:
-        st.success(" GitHub Verified Successfully via Live API!")
+        st.success("✅ GitHub Verified Successfully via Live API!")
 
-        # 2. Show Insights based on Real Data
         if gh_check["type"] == "repo":
           st.info(
-              f"**Repo Insights:** Primary Language: **{gh_check['language']}** |"
-              f" Stars: **{gh_check['stars']}**"
+              f"**Repo Insights:** Primary Language:"
+              f" **{gh_check['language']}** | Stars: **{gh_check['stars']}** |"
+              f" Forks: **{gh_check['forks']}**"
           )
         else:
           st.info(
               f"**Profile Insights:** Username: **{gh_check['name']}** | Public"
-              f" Repositories: **{gh_check['public_repos']}**"
+              f" Repos: **{gh_check['public_repos']}** | Followers:"
+              f" **{gh_check['followers']}**"
           )
-
-        # 3. Resume & Dynamic Mentor Matching Process
-        st.markdown("---")
-        st.markdown("###  Final AI Matching Results")
-        st.write(
-            "System is matching profile against **live database tracks and"
-            " dynamic mentors**..."
-        )
-
-        # Aapka purana ChromaDB / Sentence Transformer matching code yahan call hoga
-        # Aur dynamically fetched mentors (`active_mentors`) mein se best match assign hoga.
