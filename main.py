@@ -29,22 +29,18 @@ def get_recommendations_based_on_profile(skills_text):
     conn = sqlite3.connect('internships.db')
     cursor = conn.cursor()
     
-    # Safe table creation with exact schema
-    cursor.execute('''CREATE TABLE IF NOT EXISTS internships 
+    # Purani table ko drop kar ke fresh table create karein taake schema conflict khatam ho jaye
+    cursor.execute('DROP TABLE IF EXISTS internships')
+    cursor.execute('''CREATE TABLE internships 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, domain TEXT, description TEXT, skills TEXT)''')
-    conn.commit()
     
-    # Check if table is empty before inserting sample data
-    cursor.execute("SELECT COUNT(*) FROM internships")
-    count = cursor.fetchone()[0]
-    if count == 0:
-        sample_internships = [
-            ("Generative AI & LLM Intern", "Artificial Intelligence", "Build local LLM applications using Ollama, Python, and Streamlit.", "Python, PyTorch, AI, LLM, Streamlit"),
-            ("Backend Web Developer", "Web Development", "Develop backend services using PHP, MySQL, and WampServer.", "PHP, MySQL, Web, Backend"),
-            ("Machine Learning Research Intern", "Deep Learning", "Design multilingual hate speech and text detection models using PyTorch.", "Python, PyTorch, Deep Learning, NLP")
-        ]
-        cursor.executemany("INSERT INTO internships (title, domain, description, skills) VALUES (?, ?, ?, ?)", sample_internships)
-        conn.commit()
+    sample_internships = [
+        ("Generative AI & LLM Intern", "Artificial Intelligence", "Build local LLM applications using Ollama, Python, and Streamlit.", "Python, PyTorch, AI, LLM, Streamlit"),
+        ("Backend Web Developer", "Web Development", "Develop backend services using PHP, MySQL, and WampServer.", "PHP, MySQL, Web, Backend"),
+        ("Machine Learning Research Intern", "Deep Learning", "Design multilingual hate speech and text detection models using PyTorch.", "Python, PyTorch, Deep Learning, NLP")
+    ]
+    cursor.executemany("INSERT INTO internships (title, domain, description, skills) VALUES (?, ?, ?, ?)", sample_internships)
+    conn.commit()
 
     cursor.execute("SELECT title, domain, description, skills FROM internships")
     all_jobs = cursor.fetchall()
