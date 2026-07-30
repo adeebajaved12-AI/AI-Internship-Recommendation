@@ -100,3 +100,36 @@ def get_realtime_recommendations(skills_text):
 
     scored_jobs.sort(key=lambda x: x[0], reverse=True)
     return [job for score, job in scored_jobs]
+import sqlite3
+
+
+def init_db():
+  conn = sqlite3.connect("internships.db")
+  cursor = conn.cursor()
+
+  # Create the table if it doesn't already exist
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS internships (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            skills TEXT
+        )
+    """)
+
+  # Check if table is empty before inserting sample data to prevent duplicates
+  cursor.execute("SELECT COUNT(*) FROM internships")
+  count = cursor.fetchone()[0]
+
+  if count == 0:
+    cursor.executemany(
+        """
+            INSERT INTO internships (title, domain, description, skills) 
+            VALUES (?, ?, ?, ?)
+        """,
+        sample_internships,
+    )
+
+  conn.commit()
+  conn.close()
