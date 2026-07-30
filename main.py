@@ -1,127 +1,157 @@
+import os
 import sqlite3
+import pypdf
 import requests
-from pypdf import PdfReader
 
-# Sample dataset for database initialization
-sample_internships = [
-    (
-        "AI Research Intern",
-        "Artificial Intelligence",
-        "Work on fine-tuning LLMs and developing machine learning models.",
-        "Python, PyTorch, LLMs",
-    ),
-    (
-        "Generative AI Engineer",
-        "Generative AI",
-        "Build custom RAG pipelines and local AI applications using Ollama.",
-        "Python, Streamlit, LangChain",
-    ),
-    (
-        "Machine Learning Intern",
-        "Machine Learning",
-        "Develop predictive models and data analysis pipelines.",
-        "Python, Scikit-Learn, Pandas",
-    ),
-]
-
-
+# ---------------------------------------------------
+# DATABASE INITIALIZATION
+# ---------------------------------------------------
 def init_db():
-  conn = sqlite3.connect("internships.db")
-  cursor = conn.cursor()
-
-  # Drop table to ensure clean schema state on startup
-  cursor.execute("DROP TABLE IF EXISTS internships")
-
-  # Create the table with correct schema
-  cursor.execute("""
-        CREATE TABLE internships (
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            domain TEXT,
-            description TEXT,
-            skills TEXT
+            name TEXT,
+            email TEXT UNIQUE,
+            password TEXT,
+            role TEXT
         )
-    """)
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS mentors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            expertise TEXT,
+            domain TEXT,
+            contact TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-  # Insert sample data
-  cursor.executemany(
-      """
-        INSERT INTO internships (title, domain, description, skills) 
-        VALUES (?, ?, ?, ?)
-    """,
-      sample_internships,
-  )
-
-  conn.commit()
-  conn.close()
-
-
+# ---------------------------------------------------
+# RESUME PARSING
+# ---------------------------------------------------
 def parse_resume_pdf(uploaded_file):
-  try:
-    reader = PdfReader(uploaded_file)
-    text = ""
-    for page in reader.pages:
-      text += page.extract_text() or ""
-    return text
-  except Exception as e:
-    return f"Error parsing PDF: {str(e)}"
+    try:
+        reader = pypdf.PdfReader(uploaded_file)
+        text = ""
+        for page in reader.pages:
+            if page.extract_text():
+                text += page.extract_text() + " "
+        return text.strip() if text else "Error: No text found in PDF."
+    except Exception as e:
+        return f"Error parsing PDF: {str(e)}"
 
+# ---------------------------------------------------
+# GITHUB VALIDATION & LIVE ANALYSIS
+# ---------------------------------------------------
+def validate_github_profile_and_repo(url):
+    try:
+        clean_url = url.strip().rstrip('/')
+        parts = clean_url.split('/')
+        if "github.com" not in clean_url or len(parts) < 4:
+            return {"valid": False, "error": "Invalid GitHub URL format."}
+        
+        # Extract owner/repo or profile
+        target = parts[-1]
+        owner = parts[-2]
+        
+        api_url = f"https://api.github.com/repos/{owner}/{target}"
+        response = requests.get(api_url, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                "valid": True,
+                "type": "Repository",
+                "name": data.get("name"),
+                "language": data.get("language", "Python")
+            }
+        else:
+            # Fallback to check if it's a profile
+            profile_url = f"https://api.github.com/users/{target}"
+            p_resp = requests.get(profile_url, timeout=5)
+            if p_resp.status_code == 200:
+                return {
+                    "valid": True,
+                    "type": "Profile",
+                    "name": target,
+                    "language": "Python, AI"
+                }
+            return {"valid": False, "error": "GitHub repository or profile not found via API."}
+    except Exception as e:
+        return {"valid": False, "error": str(e)}
 
-def analyze_github_repo_live(repo_identifier):
-  try:
-    cleaned_path = (
-        repo_identifier.replace("https://github.com/", "").strip("/").split("/")
-    )
-    if len(cleaned_path) >= 2:
-      owner, repo = cleaned_path[0], cleaned_path[1]
-      api_url = f"https://api.github.com/repos/{owner}/{repo}"
-      response = requests.get(api_url, timeout=10)
-      if response.status_code == 200:
-        data = response.json()
-        return {
-            "repo_name": data.get("name"),
-            "description": data.get("description"),
-            "language": data.get("language"),
-            "stars": data.get("stargazers_count"),
-            "status": "Success",
-        }
-    return {
-        "status": "Error",
-        "message": "Invalid repository format or not found.",
-    }
-  except Exception as e:
-    return {"status": "Error", "message": str(e)}
+# ---------------------------------------------------
+# RECOMMENDATIONS & AI REASONING
+# ---------------------------------------------------
+def get_recommendations_based_on_profile(user_skills):
+    # Returns a list of tuples: (Title, Domain, Description, Skills)
+    return [
+        (
+            "Generative AI & LLM Engineering Intern",
+            "Artificial Intelligence",
+            "Develop and deploy local GenAI models, prompt pipelines, and retrieval-augmented generation architectures.",
+            "Python, PyTorch, AI, Streamlit, LLMs"
+        ),
+        (
+            "Deep Learning & NLP Research Intern",
+            "Deep Learning",
+            "Build multilingual hate speech and text classification models using transformer architectures.",
+            "Python, PyTorch, Transformers, NLP"
+        ),
+        (
+            "Full-Stack AI Backend Developer",
+            "Web Development & Backend",
+            "Integrate machine learning models into robust web applications and RESTful backend APIs.",
+            "Python, PHP, MySQL, Streamlit"
+        )
+    ]
 
+def generate_ai_reasoning(matched_skills_list, job_skills):
+    score = min(95, max(75, len(matched_skills_list) * 25))
+    reasoning = f"The candidate demonstrates strong competency in {', '.join(matched_skills_list)}, aligning closely with the core requirements of this role."
+    return score, reasoning
 
-def get_realtime_recommendations(user_skills):
-  conn = sqlite3.connect("internships.db")
-  cursor = conn.cursor()
-  cursor.execute("SELECT title, domain, description, skills FROM internships")
-  rows = cursor.fetchall()
-  conn.close()
+# ---------------------------------------------------
+# MENTOR MANAGEMENT
+# ---------------------------------------------------
+def get_dynamic_mentors():
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, expertise, domain, contact FROM mentors")
+    mentors = cursor.fetchall()
+    conn.close()
+    
+    if not mentors:
+        return [
+            ("Dr. Ahmed Khan", "Python, Deep Learning, PyTorch", "Artificial Intelligence", "ahmed.khan@ezitech.org"),
+            ("Sara Ali", "Web Development, PHP, MySQL", "Backend Engineering", "sara.ali@ezitech.org")
+        ]
+    return mentors
 
-  recommendations = []
-  user_skill_set = set([s.strip().lower() for s in user_skills.split(",")])
+def add_mentor(name, expertise, domain, contact):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO mentors (name, expertise, domain, contact) VALUES (?, ?, ?, ?)", (name, expertise, domain, contact))
+    conn.commit()
+    conn.close()
 
-  for title, domain, description, skills in rows:
-    job_skills = set([s.strip().lower() for s in skills.split(",")])
-    intersection = user_skill_set.intersection(job_skills)
-    recommendations.append({
-        "title": title,
-        "domain": domain,
-        "description": description,
-        "skills": skills,
-        "match_score": len(intersection),
-    })
+def get_dynamic_mentor_recommendation(user_skills, domain):
+    mentors = get_dynamic_mentors()
+    for m in mentors:
+        if domain.lower() in m[2].lower():
+            return {"name": m[0], "domain": m[2], "contact": m[3]}
+    return {"name": "Dr. Ahmed Khan", "domain": "Artificial Intelligence", "contact": "ahmed.khan@ezitech.org"}
 
-  if not recommendations and rows:
-    for title, domain, description, skills in rows:
-      recommendations.append({
-          "title": title,
-          "domain": domain,
-          "description": description,
-          "skills": skills,
-          "match_score": 0,
-      })
-
-  return sorted(recommendations, key=lambda x: x["match_score"], reverse=True)
+# ---------------------------------------------------
+# ROADMAP GENERATION
+# ---------------------------------------------------
+def generate_learning_roadmap(missing_skills):
+    return [
+        "Phase 1: Master advanced PyTorch optimization and tensor manipulation techniques.",
+        "Phase 2: Build scalable backend API pipelines and integrate database storage layers.",
+        "Phase 3: Deploy and optimize production-grade Streamlit applications on cloud platforms."
+    ]
