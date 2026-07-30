@@ -11,14 +11,14 @@ def add_mentor(name, expertise, contact):
     conn.close()
 
 def get_dynamic_mentors():
-    if os.path.exists('internships.db'):
-        conn = sqlite3.connect('internships.db')
-        cursor = conn.cursor()
-        cursor.execute("SELECT name, expertise, contact FROM mentors")
-        mentors = cursor.fetchall()
-        conn.close()
-        return mentors
-    return []
+    conn = sqlite3.connect('internships.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS mentors 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, expertise TEXT, contact TEXT)''')
+    cursor.execute("SELECT name, expertise, contact FROM mentors")
+    mentors = cursor.fetchall()
+    conn.close()
+    return mentors
 
 def validate_github_profile_and_repo(url):
     if "github.com" in url:
@@ -32,7 +32,6 @@ def get_recommendations_based_on_profile(skills_text):
     conn = sqlite3.connect('internships.db')
     cursor = conn.cursor()
     
-    # Table create agar pehle se na ho aur kuch dummy data insert karna ho
     cursor.execute('''CREATE TABLE IF NOT EXISTS internships 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, domain TEXT, description TEXT, skills TEXT)''')
     
@@ -50,17 +49,14 @@ def get_recommendations_based_on_profile(skills_text):
     all_jobs = cursor.fetchall()
     conn.close()
 
-    # Simple matching logic based on keywords
     matched_jobs = []
     user_skills_lower = skills_text.lower()
     
     for job in all_jobs:
         job_skills = job[3].lower()
-        # Agar koi bhi skill match ho jaye
         if any(skill.strip() in user_skills_lower for skill in job_skills.split(',')):
             matched_jobs.append(job)
             
-    # Agar direct match na ho toh saari dikha do as fallback
     if not matched_jobs:
         matched_jobs = all_jobs
         
