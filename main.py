@@ -1,4 +1,6 @@
 import sqlite3
+import requests
+from pypdf import PdfReader
 
 # Sample dataset for database initialization
 sample_internships = [
@@ -27,7 +29,6 @@ def init_db():
   conn = sqlite3.connect("internships.db")
   cursor = conn.cursor()
 
-  # Create the table if it doesn't already exist
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS internships (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +39,6 @@ def init_db():
         )
     """)
 
-  # Check if table is empty before inserting sample data to prevent duplicates
   cursor.execute("SELECT COUNT(*) FROM internships")
   count = cursor.fetchone()[0]
 
@@ -55,39 +55,66 @@ def init_db():
   conn.close()
 
 
-def get_all_internships():
+def parse_resume_pdf(uploaded_file):
+  try:
+    reader = PdfReader(uploaded_file)
+    text = ""
+    for page in reader.pages:
+      text += page.extract_text() or ""
+    return text
+  except Exception as e:
+    return f"Error parsing PDF: {str(e)}"
+
+
+def analyze_github_repo_live(repo_identifier):
+  try:
+    cleaned_path = (
+        repo_identifier.replace("https://github.com/", "").strip("/").split("/")
+    )
+    if len(cleaned_path) >= 2:
+      owner, repo = cleaned_path[0], cleaned_path[1]
+      api_url = f"https://api.github.com/repos/{owner}/{repo}"
+      response = requests.get(api_url, timeout=10)
+      if response.status_code == 200:
+        data = response.json()
+        return {
+            "repo_name": data.get("name"),
+            "description": data.get("description"),
+            "language": data.get("language"),
+            "stars": data.get("stargazers_count"),
+            "status": "Success",
+        }
+    return {
+        "status": "Error",
+        "message": "Invalid repository format or not found.",
+    }
+  except Exception as e:
+    return {"status": "Error", "message": str(e)}
+
+
+def get_realtime_recommendations(user_skills):
   conn = sqlite3.connect("internships.db")
   cursor = conn.cursor()
-  cursor.execute(
-      "SELECT title, domain, description, skills FROM internships"
-  )
+  cursor.execute("SELECT title, domain, description, skills FROM internships")
   rows = cursor.fetchall()
   conn.close()
-  return rows
 
-
-def recommend_internships(user_skills):
-  # Recommendation logic based on matching skills
-  internships = get_all_internships()
   recommendations = []
   user_skill_set = set([s.strip().lower() for s in user_skills.split(",")])
 
-  for title, domain, description, skills in internships:
+  for title, domain, description, skills in rows:
     job_skills = set([s.strip().lower() for s in skills.split(",")])
-    # Match criteria
     intersection = user_skill_set.intersection(job_skills)
-    if intersection:
-      recommendations.append({
-          "title": title,
-          "domain": domain,
-          "description": description,
-          "skills": skills,
-          "match_score": len(intersection),
-      })
+    recommendations.append({
+        "title": title,
+        "domain": domain,
+        "description": description,
+        "skills": skills,
+        "match_score": len(intersection),
+    })
 
-  # Fallback if no direct match
-  if not recommendations and internships:
-    for title, domain, description, skills in internships:
+  if not recommendations and rows:
+    for title, domain, description, skills in rows:
       recommendations.append({
           "title": title,
           "domain": domain,
