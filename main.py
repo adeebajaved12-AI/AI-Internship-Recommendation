@@ -26,17 +26,18 @@ def validate_github_profile_and_repo(url):
     return {"valid": False, "error": "Invalid GitHub URL format."}
 
 def get_recommendations_based_on_profile(skills_text):
-    """
-    Database se internships fetch karke user ke skills/profile ke mutabiq match karega.
-    """
     conn = sqlite3.connect('internships.db')
     cursor = conn.cursor()
     
+    # Safe table creation with exact schema
     cursor.execute('''CREATE TABLE IF NOT EXISTS internships 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, domain TEXT, description TEXT, skills TEXT)''')
+    conn.commit()
     
+    # Check if table is empty before inserting sample data
     cursor.execute("SELECT COUNT(*) FROM internships")
-    if cursor.fetchone()[0] == 0:
+    count = cursor.fetchone()[0]
+    if count == 0:
         sample_internships = [
             ("Generative AI & LLM Intern", "Artificial Intelligence", "Build local LLM applications using Ollama, Python, and Streamlit.", "Python, PyTorch, AI, LLM, Streamlit"),
             ("Backend Web Developer", "Web Development", "Develop backend services using PHP, MySQL, and WampServer.", "PHP, MySQL, Web, Backend"),
@@ -50,7 +51,7 @@ def get_recommendations_based_on_profile(skills_text):
     conn.close()
 
     matched_jobs = []
-    user_skills_lower = skills_text.lower()
+    user_skills_lower = skills_text.lower() if skills_text else ""
     
     for job in all_jobs:
         job_skills = job[3].lower()
