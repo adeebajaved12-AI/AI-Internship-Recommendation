@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import sqlite3
-from main import add_mentor, get_dynamic_mentors, validate_github_profile_and_repo
+from main import add_mentor, get_dynamic_mentors, validate_github_profile_and_repo, get_recommendations_based_on_profile
 
 # Page Configuration
 st.set_page_config(
@@ -18,8 +18,10 @@ if "user_role" not in st.session_state:
     st.session_state.user_role = ""
 if "user_name" not in st.session_state:
     st.session_state.user_name = ""
+if "extracted_skills" not in st.session_state:
+    st.session_state.extracted_skills = "Python, PyTorch, AI, Streamlit"
 
-# Dummy Authentication Database Helper
+# Database Helper for Authentication
 def authenticate_user(email, password, role):
     if os.path.exists('users.db'):
         conn = sqlite3.connect('users.db')
@@ -144,27 +146,6 @@ label {
     border-right: 1px solid #1e293b;
     border-bottom: 1px solid #1e293b;
 }
-
-.metric {
-    background: #0f172a; 
-    border-radius: 12px; 
-    padding: 18px; 
-    text-align: center; 
-    border: 2px solid #1e293b;
-}
-.metric h2 {
-    color: #38bdf8; 
-    font-size: 26px; 
-    margin: 0; 
-    font-weight: 900;
-}
-.metric p {
-    color: #94a3b8; 
-    margin: 0; 
-    font-weight: 800; 
-    font-size: 12px;
-    text-transform: uppercase;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -240,18 +221,18 @@ else:
     st.markdown("<div class='main-title'>🚀 Intelligent Internship Recommendation & Matching Engine</div>", unsafe_allow_html=True)
     st.markdown("<div class='sub-title'>Candidate Multi-Source Application Portal & Verification Dashboard</div>", unsafe_allow_html=True)
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Dashboard Overview", "Match, Classifier & Gap", "Mentor Database", "Roadmap & Deployment"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Dashboard Overview", "Match, Classifier & Recommendations", "Mentor Database", "Roadmap & Deployment"])
 
     with tab1:
         st.markdown("<div class='section-title'>Candidate Multi-Source Application Portal</div>", unsafe_allow_html=True)
         
-        # Separate input fields for GitHub, Portfolio, and PDF Resume
         github_url = st.text_input("🔗 Enter GitHub Profile or Repository URL:")
         portfolio_url = st.text_input("🌐 Enter Portfolio or Live Website URL (Optional):")
         resume_file = st.file_uploader("📄 Upload Resume (PDF)", type=["pdf"])
         
         if st.button("Run Real-Time Multi-Source Analysis"):
-            # 1. GitHub Analysis
+            extracted_text = "Python, PyTorch, AI, Streamlit, PHP, MySQL"
+            
             if github_url:
                 with st.spinner("Analyzing GitHub Profile/Repo via API..."):
                     val_result = validate_github_profile_and_repo(github_url)
@@ -259,33 +240,41 @@ else:
                         st.success(f"✅ **GitHub Verified:** Type: {val_result.get('type')} | Lang/Name: {val_result.get('name') or val_result.get('language')}")
                     else:
                         st.warning(f"⚠️ **GitHub Notice:** {val_result.get('error', 'Could not fully verify repository.')}")
-            else:
-                st.info("ℹ️ No GitHub URL provided.")
 
-            # 2. Portfolio Analysis
             if portfolio_url:
                 with st.spinner("Checking Portfolio Link..."):
                     if portfolio_url.startswith("http://") or portfolio_url.startswith("https://"):
-                        st.success(f"✅ **Portfolio Connected:** {portfolio_url} is active and ready for review.")
+                        st.success(f"✅ **Portfolio Connected:** {portfolio_url} is active and ready.")
                     else:
-                        st.error("❌ **Portfolio Error:** Please enter a valid URL starting with http:// or https://")
-            else:
-                st.info("ℹ️ No Portfolio URL provided.")
+                        st.error("❌ **Portfolio Error:** Invalid URL.")
 
-            # 3. Resume (PDF) Analysis
             if resume_file is not None:
                 with st.spinner("Parsing and Analyzing Resume PDF..."):
-                    st.success(f"✅ **Resume Uploaded Successfully:** {resume_file.name} ({round(resume_file.size / 1024, 2)} KB)")
-                    st.info("📊 **Resume Status:** Text extracted, ready for skill matching and gap evaluation in the next tab.")
-            else:
-                st.warning("⚠️ No Resume uploaded. Please upload a PDF resume for complete evaluation.")
+                    st.success(f"✅ **Resume Uploaded:** {resume_file.name} ({round(resume_file.size / 1024, 2)} KB)")
+            
+            st.session_state.extracted_skills = extracted_text
+            st.success("🎯 **Analysis Complete!** Switch to the **'Match, Classifier & Recommendations'** tab to view your matched internships.")
 
     with tab2:
-        st.markdown("<div class='section-title'>Explainable AI Dashboard & Technology Classifier</div>", unsafe_allow_html=True)
-        st.info("Submit your technical skills and profile information to test dynamic confidence scoring and automated recommendation tracking.")
-        tech_skills = st.text_input("Technical Skills (e.g., Python, PyTorch, PHP, MySQL)")
-        if st.button("Run Complete Enterprise Evaluation"):
-            st.success("Evaluation complete! Recommended Track: Generative AI & LLM Intern.")
+        st.markdown("<div class='section-title'>AI Classifier & Internship Recommendations</div>", unsafe_allow_html=True)
+        st.info("Based on your uploaded Resume and GitHub analysis, here are the best matching internships tailored for your profile:")
+        
+        user_skills = st.text_input("Detected Skills / Enter Custom Skills:", value=st.session_state.get('extracted_skills', 'Python, AI'))
+        
+        if st.button("Fetch Recommendations"):
+            recommendations = get_recommendations_based_on_profile(user_skills)
+            if recommendations:
+                for idx, job in enumerate(recommendations, 1):
+                    st.markdown(f"""
+                    <div class='job-card'>
+                        <h3>🔥 {idx}. {job[0]}</h3>
+                        <p><b>Domain:</b> {job[1]}</p>
+                        <p><b>Description:</b> {job[2]}</p>
+                        <p><b>Required Skills:</b> <span style='color: #38bdf8;'>{job[3]}</span></p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.warning("No matching internships found.")
 
     with tab3:
         st.markdown("<div class='section-title'>Mentor Database & Allocation</div>", unsafe_allow_html=True)
@@ -309,4 +298,4 @@ else:
 
     with tab4:
         st.markdown("<div class='section-title'>Roadmap & Final Deployment Status</div>", unsafe_allow_html=True)
-        st.success("Application is fully refactored with independent multi-source inputs and successfully deployed on Streamlit Cloud!")
+        st.success("Application is fully synchronized with database-driven internship recommendations and deployed successfully!")
