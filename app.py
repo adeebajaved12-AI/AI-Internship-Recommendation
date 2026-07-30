@@ -6,7 +6,7 @@ from main import add_mentor, get_dynamic_mentors, validate_github_profile_and_re
 # Page Configuration
 st.set_page_config(
     page_title="Intelligent Internship Recommendation Engine",
-    page_icon="🚀",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -173,7 +173,7 @@ label {
 # ---------------------------------------------------
 if not st.session_state.logged_in:
     st.markdown("<div class='brand-logo'>EZITECH PORTAL</div>", unsafe_allow_html=True)
-    st.markdown("<div class='main-title'>🔐 Portal Authentication</div>", unsafe_allow_html=True)
+    st.markdown("<div class='main-title'> Portal Authentication</div>", unsafe_allow_html=True)
     st.markdown("<div class='sub-title'>Secure access control for Students, Mentors, and Administrators.</div>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 1], gap="large")
@@ -240,7 +240,7 @@ else:
 
     # Main Application Header
     st.markdown("<div class='brand-logo'>EZITECH INTERNSHIP PLATFORM</div>", unsafe_allow_html=True)
-    st.markdown("<div class='main-title'>🚀 Intelligent Internship Recommendation & Matching Engine</div>", unsafe_allow_html=True)
+    st.markdown("<div class='main-title'> Intelligent Internship Recommendation & Matching Engine</div>", unsafe_allow_html=True)
     st.markdown("<div class='sub-title'>Candidate Application Portal & Explainable AI Verification Dashboard</div>", unsafe_allow_html=True)
 
     # Navigation Tabs for the Platform
