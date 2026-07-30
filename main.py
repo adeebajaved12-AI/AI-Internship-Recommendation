@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import pypdf
 
 def init_db():
     conn = sqlite3.connect('internships.db')
@@ -92,6 +93,39 @@ def validate_github_profile_and_repo(url):
     if "github.com" in url:
         return {"valid": True, "type": "Repository/Profile", "language": "Python / AI / Web", "name": url.split("/")[-1]}
     return {"valid": False, "error": "Invalid GitHub URL format."}
+
+def parse_resume_pdf(uploaded_file):
+    """Extracts text from uploaded PDF resumes for profile analysis."""
+    try:
+        reader = pypdf.PdfReader(uploaded_file)
+        text = ""
+        for page in reader.pages:
+            extracted = page.extract_text()
+            if extracted:
+                text += extracted + "\n"
+        return text
+    except Exception as e:
+        return f"Error parsing PDF: {str(e)}"
+
+def generate_learning_roadmap(missing_skills):
+    """Generates personalized learning path based on missing competencies."""
+    roadmap = []
+    for skill in missing_skills:
+        if "pytorch" in skill.lower() or "ai" in skill.lower() or "llm" in skill.lower():
+            roadmap.append(f"Complete Deep Learning & LLM specialized training modules for {skill}.")
+        elif "php" in skill.lower() or "mysql" in skill.lower() or "backend" in skill.lower():
+            roadmap.append(f"Build hands-on database-driven projects focusing on {skill}.")
+        else:
+            roadmap.append(f"Focus on practical implementation and documentation for {skill}.")
+    return roadmap if roadmap else ["All core competencies met! Proceed to live project deployment."]
+
+def generate_ai_reasoning(matched_skills, total_required):
+    """Generates confidence score and AI reasoning summary for the candidate profile."""
+    required_list = [s.strip() for s in total_required.split(',')]
+    score = int((len(matched_skills) / max(len(required_list), 1)) * 100)
+    score = min(max(score, 40), 98) # Keep realistic bounds
+    reasoning = f"Candidate profile demonstrates alignment with {len(matched_skills)} out of {len(required_list)} required core technical competencies, resulting in an evaluated confidence score of {score}%."
+    return score, reasoning
 
 def get_recommendations_based_on_profile(skills_text):
     init_db()
