@@ -40,6 +40,16 @@ def add_mentor(name, expertise, domain, contact):
     conn.commit()
     conn.close()
 
+def get_dynamic_mentors():
+    """Compatibility alias for app.py imports"""
+    init_db()
+    conn = sqlite3.connect('internships.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, expertise, domain, contact FROM mentors")
+    mentors = cursor.fetchall()
+    conn.close()
+    return mentors
+
 def get_dynamic_mentor_recommendation(user_skills, matched_domain):
     """
     Ezitech Case Study Requirement: Matches applicant profile skills and domain 
