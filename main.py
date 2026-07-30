@@ -29,8 +29,12 @@ def init_db():
   conn = sqlite3.connect("internships.db")
   cursor = conn.cursor()
 
+  # Drop table to ensure clean schema state on startup
+  cursor.execute("DROP TABLE IF EXISTS internships")
+
+  # Create the table with correct schema
   cursor.execute("""
-        CREATE TABLE IF NOT EXISTS internships (
+        CREATE TABLE internships (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT,
             domain TEXT,
@@ -39,17 +43,14 @@ def init_db():
         )
     """)
 
-  cursor.execute("SELECT COUNT(*) FROM internships")
-  count = cursor.fetchone()[0]
-
-  if count == 0:
-    cursor.executemany(
-        """
-            INSERT INTO internships (title, domain, description, skills) 
-            VALUES (?, ?, ?, ?)
-        """,
-        sample_internships,
-    )
+  # Insert sample data
+  cursor.executemany(
+      """
+        INSERT INTO internships (title, domain, description, skills) 
+        VALUES (?, ?, ?, ?)
+    """,
+      sample_internships,
+  )
 
   conn.commit()
   conn.close()
