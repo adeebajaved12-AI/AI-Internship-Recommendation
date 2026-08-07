@@ -121,7 +121,6 @@ def get_recommendations_based_on_profile(user_skills):
     if not user_skills:
         return []
     
-    # Analyze actual extracted skill text to provide relevant options
     skills_lower = user_skills.lower()
     recommendations = []
     
@@ -339,124 +338,157 @@ if not st.session_state.logged_in:
                         st.warning("Please fill all fields.")
 
 # ---------------------------------------------------
-# MAIN DASHBOARD
+# MAIN DASHBOARD (ROLE-BASED RENDERING)
 # ---------------------------------------------------
 else:
     st.sidebar.title(f"Welcome, {st.session_state.get('user_name', 'User')}")
     st.sidebar.info(f"Role: {st.session_state.get('user_role', 'Student')}")
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
+        st.session_state.user_role = ""
+        st.session_state.user_name = ""
         st.rerun()
 
-    st.markdown("<div class='brand-logo'>EZITECH INTERNSHIP PLATFORM</div>", unsafe_allow_html=True)
-    st.markdown("<div class='main-title'>🚀 Real-Time Internship Recommendation Engine</div>", unsafe_allow_html=True)
-    st.markdown("<div class='sub-title'>Live Multi-Source API Verification & Candidate Analysis Portal</div>", unsafe_allow_html=True)
+    current_role = st.session_state.get("user_role", "Student")
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "Dashboard Overview",
-        "Match, Classifier & Recommendations",
-        "Mentor Database",
-        "Roadmap & Deployment"
-    ])
+    # 1. STUDENT DASHBOARD
+    if current_role == "Student":
+        st.markdown("<div class='brand-logo'>EZITECH INTERNSHIP PLATFORM</div>", unsafe_allow_html=True)
+        st.markdown("<div class='main-title'>🚀 Student Verification & Recommendation Hub</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Live Multi-Source API Verification & Candidate Analysis Portal</div>", unsafe_allow_html=True)
 
-    with tab1:
-        st.markdown("<div class='section-title'>Candidate Multi-Source Application Portal</div>", unsafe_allow_html=True)
-        st.info("⚠️ This system runs strictly on real-time inputs. Provide a valid GitHub repository/profile URL or upload a text-readable Resume PDF.")
+        tab1, tab2, tab4 = st.tabs([
+            "Dashboard Overview",
+            "Match, Classifier & Recommendations",
+            "Roadmap & Deployment"
+        ])
 
-        github_url = st.text_input("🔗 Enter GitHub Profile or Repository URL:")
-        portfolio_url = st.text_input("🌐 Enter Portfolio or Live Website URL (Optional):")
-        resume_file = st.file_uploader("📄 Upload Resume (PDF)", type=["pdf"])
+        with tab1:
+            st.markdown("<div class='section-title'>Candidate Multi-Source Application Portal</div>", unsafe_allow_html=True)
+            st.info("⚠️ This system runs strictly on real-time inputs. Provide a valid GitHub repository/profile URL or upload a text-readable Resume PDF.")
 
-        if st.button("Run Real-Time Multi-Source Analysis"):
-            extracted_skills_list = []
-            valid_sources_found = False
+            github_url = st.text_input("🔗 Enter GitHub Profile or Repository URL:")
+            portfolio_url = st.text_input("🌐 Enter Portfolio or Live Website URL (Optional):")
+            resume_file = st.file_uploader("📄 Upload Resume (PDF)", type=["pdf"])
 
-            if resume_file is not None:
-                with st.spinner("Parsing and Analyzing Resume PDF via PyPDF..."):
-                    pdf_text = parse_resume_pdf(resume_file)
-                    if not pdf_text.startswith("Error"):
-                        extracted_skills_list.append(pdf_text[:400])
-                        valid_sources_found = True
-                        st.success(f"✅ **Resume Parsed Successfully:** {resume_file.name} ({round(resume_file.size / 1024, 2)} KB)")
+            if st.button("Run Real-Time Multi-Source Analysis"):
+                extracted_skills_list = []
+                valid_sources_found = False
+
+                if resume_file is not None:
+                    with st.spinner("Parsing and Analyzing Resume PDF via PyPDF..."):
+                        pdf_text = parse_resume_pdf(resume_file)
+                        if not pdf_text.startswith("Error"):
+                            extracted_skills_list.append(pdf_text[:400])
+                            valid_sources_found = True
+                            st.success(f"✅ **Resume Parsed Successfully:** {resume_file.name} ({round(resume_file.size / 1024, 2)} KB)")
+                        else:
+                            st.warning(f"⚠️ {pdf_text}")
+
+                if github_url:
+                    with st.spinner("Querying GitHub Public API in Real-Time..."):
+                        val_result = validate_github_profile_and_repo(github_url)
+                        if val_result.get("valid"):
+                            repo_lang = val_result.get('language') or "Python"
+                            extracted_skills_list.append(repo_lang)
+                            valid_sources_found = True
+                            st.success(f"✅ **GitHub Verified via API:** Type: {val_result.get('type')} | Lang/Name: {val_result.get('name') or repo_lang}")
+                        else:
+                            st.error(f"❌ **GitHub Verification Failed:** {val_result.get('error')}")
+
+                if portfolio_url:
+                    if portfolio_url.startswith("http://") or portfolio_url.startswith("https://"):
+                        st.success(f"✅ **Portfolio URL Active:** {portfolio_url}")
                     else:
-                        st.warning(f"⚠️ {pdf_text}")
+                        st.error("❌ **Portfolio Error:** Invalid URL format.")
 
-            if github_url:
-                with st.spinner("Querying GitHub Public API in Real-Time..."):
-                    val_result = validate_github_profile_and_repo(github_url)
-                    if val_result.get("valid"):
-                        repo_lang = val_result.get('language') or "Python"
-                        extracted_skills_list.append(repo_lang)
-                        valid_sources_found = True
-                        st.success(f"✅ **GitHub Verified via API:** Type: {val_result.get('type')} | Lang/Name: {val_result.get('name') or repo_lang}")
-                    else:
-                        st.error(f"❌ **GitHub Verification Failed:** {val_result.get('error')}")
-
-            if portfolio_url:
-                if portfolio_url.startswith("http://") or portfolio_url.startswith("https://"):
-                    st.success(f"✅ **Portfolio URL Active:** {portfolio_url}")
+                if valid_sources_found:
+                    st.session_state.extracted_skills = ", ".join(extracted_skills_list)
+                    st.success("🎯 **Real-Time Analysis Complete!** Switch to the **'Match, Classifier & Recommendations'** tab.")
                 else:
-                    st.error("❌ **Portfolio Error:** Invalid URL format.")
+                    st.session_state.extracted_skills = ""
+                    st.error("❌ **Analysis Incomplete:** Please provide a valid GitHub URL or upload a readable resume PDF.")
 
-            if valid_sources_found:
-                st.session_state.extracted_skills = ", ".join(extracted_skills_list)
-                st.success("🎯 **Real-Time Analysis Complete!** Switch to the **'Match, Classifier & Recommendations'** tab.")
-            else:
-                st.session_state.extracted_skills = ""
-                st.error("❌ **Analysis Incomplete:** Please provide a valid GitHub URL or upload a readable resume PDF.")
-
-    with tab2:
-        st.markdown("<div class='section-title'>AI Classifier & Live Recommendations</div>", unsafe_allow_html=True)
-        
-        current_skills = st.session_state.get("extracted_skills", "")
-        
-        if not current_skills:
-            st.warning("⚠️ No live skills detected yet. Please complete the verification step in the **'Dashboard Overview'** tab first.")
-        else:
-            st.success(f"🔍 **Active Extracted Profile Context:** {current_skills[:150]}...")
+        with tab2:
+            st.markdown("<div class='section-title'>AI Classifier & Live Recommendations</div>", unsafe_allow_html=True)
             
-            if st.button("Fetch Recommendations & AI Reasoning"):
-                recommendations = get_recommendations_based_on_profile(current_skills)
-                if recommendations:
-                    top_match = recommendations[0]
-                    job_title, job_domain, job_desc, job_skills = top_match[0], top_match[1], top_match[2], top_match[3]
+            current_skills = st.session_state.get("extracted_skills", "")
+            
+            if not current_skills:
+                st.warning("⚠️ No live skills detected yet. Please complete the verification step in the **'Dashboard Overview'** tab first.")
+            else:
+                st.success(f"🔍 **Active Extracted Profile Context:** {current_skills[:150]}...")
+                
+                if st.button("Fetch Recommendations & AI Reasoning"):
+                    recommendations = get_recommendations_based_on_profile(current_skills)
+                    if recommendations:
+                        top_match = recommendations[0]
+                        job_title, job_domain, job_desc, job_skills = top_match[0], top_match[1], top_match[2], top_match[3]
 
-                    req_skills_list = [s.strip() for s in job_skills.split(",")]
-                    matched_count = sum(1 for rs in req_skills_list if rs.lower() in current_skills.lower())
-                    
-                    score, reasoning = generate_ai_reasoning(req_skills_list[:max(matched_count, 1)], job_skills)
-                    assigned_mentor = get_dynamic_mentor_recommendation(current_skills, job_domain)
+                        req_skills_list = [s.strip() for s in job_skills.split(",")]
+                        matched_count = sum(1 for rs in req_skills_list if rs.lower() in current_skills.lower())
+                        
+                        score, reasoning = generate_ai_reasoning(req_skills_list[:max(matched_count, 1)], job_skills)
+                        assigned_mentor = get_dynamic_mentor_recommendation(current_skills, job_domain)
 
-                    for idx, job in enumerate(recommendations, 1):
-                        st.markdown(
-                            f"""
-                            <div class='job-card'>
-                                <h3>🔥 {idx}. {job[0]}</h3>
-                                <p><b>Domain:</b> {job[1]}</p>
-                                <p><b>Description:</b> {job[2]}</p>
-                                <p><b>Required Skills:</b> <span style='color: #38bdf8;'>{job[3]}</span></p>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
+                        for idx, job in enumerate(recommendations, 1):
+                            st.markdown(
+                                f"""
+                                <div class='job-card'>
+                                    <h3>🔥 {idx}. {job[0]}</h3>
+                                    <p><b>Domain:</b> {job[1]}</p>
+                                    <p><b>Description:</b> {job[2]}</p>
+                                    <p><b>Required Skills:</b> <span style='color: #38bdf8;'>{job[3]}</span></p>
+                                </div>
+                                """,
+                                unsafe_allow_html=True
+                            )
 
-                    st.divider()
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.markdown("### 🤖 Real-Time AI Evaluation")
-                        st.metric(label="Calculated Match Confidence Score", value=f"{score}%")
-                        st.write(f"**Reasoning Summary:** {reasoning}")
-                    with col_b:
-                        st.markdown("### 👨‍🏫 Assigned Mentor")
-                        if assigned_mentor:
-                            st.success(f"**Name:** {assigned_mentor['name']}")
-                            st.write(f"**Domain:** {assigned_mentor['domain']}")
-                            st.write(f"**Contact:** {assigned_mentor['contact']}")
-                else:
-                    st.warning("No matching internships found for the given criteria.")
+                        st.divider()
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.markdown("### 🤖 Real-Time AI Evaluation")
+                            st.metric(label="Calculated Match Confidence Score", value=f"{score}%")
+                            st.write(f"**Reasoning Summary:** {reasoning}")
+                        with col_b:
+                            st.markdown("### 👨‍🏫 Assigned Mentor")
+                            if assigned_mentor:
+                                st.success(f"**Name:** {assigned_mentor['name']}")
+                                st.write(f"**Domain:** {assigned_mentor['domain']}")
+                                st.write(f"**Contact:** {assigned_mentor['contact']}")
+                    else:
+                        st.warning("No matching internships found for the given criteria.")
 
-    with tab3:
-        st.markdown("<div class='section-title'>Mentor Database & Allocation</div>", unsafe_allow_html=True)
+        with tab4:
+            st.markdown("<div class='section-title'>Roadmap & Live Deployment Status</div>", unsafe_allow_html=True)
+            st.success("🚀 Application is fully connected to live APIs (GitHub API & PyPDF parser) and relational database storage!")
+
+            st.markdown("### 🗺️ Dynamic Learning Roadmap")
+            roadmap = generate_learning_roadmap(st.session_state.get("extracted_skills", ""))
+            for r_step in roadmap:
+                st.write(f"- {r_step}")
+
+    # 2. MENTOR DASHBOARD
+    elif current_role == "Mentor":
+        st.markdown("<div class='brand-logo'>EZITECH INTERNSHIP PLATFORM</div>", unsafe_allow_html=True)
+        st.markdown("<div class='main-title'>👨‍🏫 Mentor Portal & Management</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Domain oversight and candidate consultation workspace.</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='section-title'>Registered Mentors Directory</div>", unsafe_allow_html=True)
+        mentors = get_dynamic_mentors()
+        if mentors:
+            for m in mentors:
+                st.write(f"**Name:** {m[0]} | **Expertise:** {m[1]} | **Domain:** {m[2]} | **Contact:** {m[3]}")
+        else:
+            st.info("No mentors registered in database yet.")
+
+    # 3. ADMIN DASHBOARD
+    elif current_role == "Admin":
+        st.markdown("<div class='brand-logo'>EZITECH INTERNSHIP PLATFORM</div>", unsafe_allow_html=True)
+        st.markdown("<div class='main-title'>🛠️ Administrator Control Panel</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-title'>Full database management, security access, and portal infrastructure control.</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='section-title'>Mentor Database Management</div>", unsafe_allow_html=True)
         mentors = get_dynamic_mentors()
         if mentors:
             for m in mentors:
@@ -473,16 +505,7 @@ else:
             if st.form_submit_button("Save Mentor to Database"):
                 if m_name and m_exp:
                     add_mentor(m_name, m_exp, m_domain, m_contact)
-                    st.success("Mentor registered successfully! Please refresh.")
+                    st.success("Mentor registered successfully!")
                     st.rerun()
                 else:
                     st.warning("Please fill in the required mentor details.")
-
-    with tab4:
-        st.markdown("<div class='section-title'>Roadmap & Live Deployment Status</div>", unsafe_allow_html=True)
-        st.success("🚀 Application is fully connected to live APIs (GitHub API & PyPDF parser) and relational database storage!")
-
-        st.markdown("### 🗺️ Dynamic Learning Roadmap")
-        roadmap = generate_learning_roadmap(st.session_state.get("extracted_skills", ""))
-        for r_step in roadmap:
-            st.write(f"- {r_step}")
